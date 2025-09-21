@@ -1,10 +1,26 @@
+/* CSS Custom Properties (CSS Variables) for theming */
+:root {
+  /* Default theme values (Dark mode) */
+  --globeBackground: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0c29 100%);
+  --glassBackground: rgba(0, 0, 0, 0.1);
+  --glassBorder: rgba(255, 255, 255, 0.1);
+  --textPrimary: rgba(255, 255, 255, 0.9);
+  --textSecondary: rgba(255, 255, 255, 0.7);
+  --textMuted: rgba(255, 255, 255, 0.5);
+  --buttonHover: rgba(255, 255, 255, 0.2);
+  --buttonActive: rgba(255, 255, 255, 0.1);
+  --dataColorStart: rgb(100, 180, 120);
+  --dataColorEnd: rgb(255, 100, 50);
+  --noDataColor: #4a5568;
+}
+
 .globe-view-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0c29 100%);
+  background: var(--globeBackground);
   display: flex;
   align-items: center;
   justify-content: center;

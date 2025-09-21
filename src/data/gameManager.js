@@ -1,21 +1,16 @@
 // Game Manager - handles daily dataset selection and game state
-import populationDensityDataset from './populationDensity.js'
+import { getDailyDataset, getDatasetByType } from './datasets.js'
+import { updateStatsAfterGame } from './gameStats.js'
 
-// Available datasets (we'll add more later)
-const availableDatasets = [
-  populationDensityDataset,
-  // TODO: Add more datasets like coffee consumption, internet usage, etc.
-]
-
-// Get today's dataset (for now, just use the first one)
-// Later we can use date-based selection for truly daily challenges
-export const getTodaysDataset = () => {
-  // Simple implementation for MVP - always return population density
-  // In production, we'd use date math: 
-  // const daysSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-  // return availableDatasets[daysSinceEpoch % availableDatasets.length]
-  
-  return availableDatasets[0]
+// Get today's dataset using the new dynamic system
+export const getTodaysDataset = async () => {
+  try {
+    return await getDailyDataset()
+  } catch (error) {
+    console.error('Error fetching daily dataset:', error)
+    // Fallback to a default dataset
+    return await getDatasetByType('population-density')
+  }
 }
 
 // Game state management
@@ -40,18 +35,6 @@ export const checkGuess = (selectedOption, dataset) => {
 // Remove wrong options after incorrect guess
 const removeWrongOptions = (availableOptions, selectedOption, correctAnswers) => {
   let optionsToRemove = [selectedOption] // Always remove the selected wrong option
-  
-  // Remove one additional random wrong option (but not the correct answer)
-  const wrongOptions = availableOptions.filter(option => 
-    option !== selectedOption && 
-    !correctAnswers.some(answer => answer.toLowerCase() === option.toLowerCase())
-  )
-  
-  if (wrongOptions.length > 0) {
-    const randomWrongOption = wrongOptions[Math.floor(Math.random() * wrongOptions.length)]
-    optionsToRemove.push(randomWrongOption)
-  }
-  
   return availableOptions.filter(option => !optionsToRemove.includes(option))
 }
 
@@ -101,10 +84,30 @@ export const processGuess = (gameState, selectedOption) => {
   }
 }
 
+// Finalize game and update statistics
+export const finalizeGame = (gameState) => {
+  if (!gameState.isComplete) {
+    console.warn('Attempting to finalize incomplete game')
+    return gameState
+  }
+
+  // Update stats
+  const gameResult = {
+    isWon: gameState.isWon,
+    guessCount: gameState.guesses.length,
+    datasetType: gameState.dataset.id.split('-')[0], // Extract type from ID
+    datasetTitle: gameState.dataset.title
+  }
+
+  updateStatsAfterGame(gameResult)
+  return gameState
+}
+
 export default {
   getTodaysDataset,
   createGameState,
   checkGuess,
   getNextHint,
-  processGuess
+  processGuess,
+  finalizeGame
 }

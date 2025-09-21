@@ -149,6 +149,21 @@ function DailyGame() {
           )}
         </div>
       </div>
+                  setShowMenu(false)
+                }}
+              >
+                {showTooltips ? '🏷️ Hide Tooltips' : '🏷️ Show Tooltips'}
+              </button>
+              <button 
+                className="menu-item" 
+                onClick={() => setShowMenu(false)}
+              >
+                📊 Stats
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       
       {/* Right Middle - Leaderboard */}
       <div className="right-leaderboard">
@@ -165,6 +180,8 @@ function DailyGame() {
           <span>Max</span>
         </div>
       </div>
+      
+      {/* Color Legend */}
       
       {/* Left Side - Game Options */}
       <div className="left-options">
