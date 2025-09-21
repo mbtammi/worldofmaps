@@ -7,10 +7,13 @@ import Landing from './components/Landing'
 import About from './components/About'
 import HowToPlay from './components/HowToPlay'
 import NotFound from './components/NotFound'
+import { Analytics } from "@vercel/analytics/react"
+
 
 function App() {
   return (
     <BrowserRouter>
+      <Analytics />
       <Routes>
         {/* Root route = Daily game (no header/footer for immersion) */}
         <Route path="/" element={<DailyGame />} />
