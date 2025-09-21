@@ -7,7 +7,7 @@ export const THEMES = {
   COLOR: 'color'
 }
 
-const THEME_KEY = 'worldofmaps_theme'
+const THEME_KEY = 'worldofthemaps_theme'
 
 // Theme configurations
 export const themeConfigs = {
@@ -18,8 +18,15 @@ export const themeConfigs = {
       // Globe background
       globeBackground: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0c29 100%)',
       
+      // Globe imagery (null = no texture, let data colors show)
+      globeImageUrl: null,
+      
+      // Globe atmosphere and water color
+      globeAtmosphereColor: '#4a90e2',
+      globeWaterColor: 'rgba(0, 0, 0, 0)', // Transparent for space look
+      
       // UI elements
-      glassBackground: 'rgba(0, 0, 0, 0.1)',
+      glassBackground: 'rgba(0, 0, 0, 0.2)',
       glassBorder: 'rgba(255, 255, 255, 0.1)',
       textPrimary: 'rgba(255, 255, 255, 0.9)',
       textSecondary: 'rgba(255, 255, 255, 0.7)',
@@ -29,10 +36,10 @@ export const themeConfigs = {
       buttonHover: 'rgba(255, 255, 255, 0.2)',
       buttonActive: 'rgba(255, 255, 255, 0.1)',
       
-      // Data visualization (mint to coral)
-      dataColorStart: 'rgb(100, 180, 120)',
-      dataColorEnd: 'rgb(255, 100, 50)',
-      noDataColor: '#4a5568'
+      // Data visualization (light blue to dark purple)
+      dataColorStart: 'rgb(135, 206, 250)',   // Light sky blue
+      dataColorEnd: 'rgb(75, 0, 130)',        // Dark purple (indigo)
+      noDataColor: '#2d3748'
     }
   },
   
@@ -41,7 +48,14 @@ export const themeConfigs = {
     icon: '☀️',
     colors: {
       // Globe background  
-      globeBackground: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)',
+      globeBackground: 'linear-gradient(135deg, #f7fafc 0%, #e2e8f0 50%, #cbd5e0 100%)',
+      
+      // Globe imagery (light earth texture)
+      globeImageUrl: null, // We'll set this to a light earth texture
+      
+      // Globe atmosphere and water color
+      globeAtmosphereColor: '#cbd5e0',
+      globeWaterColor: 'rgba(203, 213, 224, 0.8)', // Light gray water
       
       // UI elements
       glassBackground: 'rgba(255, 255, 255, 0.8)',
@@ -54,10 +68,10 @@ export const themeConfigs = {
       buttonHover: 'rgba(0, 0, 0, 0.1)',
       buttonActive: 'rgba(0, 0, 0, 0.05)',
       
-      // Data visualization (blue to orange for better light mode visibility)
-      dataColorStart: 'rgb(33, 150, 243)',
-      dataColorEnd: 'rgb(255, 152, 0)',
-      noDataColor: '#bdbdbd'
+      // Data visualization (pastel green to pastel red)
+      dataColorStart: 'rgb(144, 238, 144)',   // Light green
+      dataColorEnd: 'rgb(255, 182, 193)',     // Light pink
+      noDataColor: '#ffffff' // White for countries without data
     }
   },
   
@@ -67,6 +81,13 @@ export const themeConfigs = {
     colors: {
       // Globe background
       globeBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+      
+      // Globe imagery (realistic earth texture)
+      globeImageUrl: '//unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+      
+      // Globe atmosphere and water color
+      globeAtmosphereColor: '#4a90e2',
+      globeWaterColor: 'rgba(0, 0, 0, 0)', // Transparent to show earth texture
       
       // UI elements
       glassBackground: 'rgba(255, 255, 255, 0.15)',
@@ -79,10 +100,10 @@ export const themeConfigs = {
       buttonHover: 'rgba(255, 255, 255, 0.3)',
       buttonActive: 'rgba(255, 255, 255, 0.2)',
       
-      // Data visualization (rainbow spectrum)
-      dataColorStart: 'rgb(138, 43, 226)', // Purple
-      dataColorEnd: 'rgb(255, 20, 147)',   // Deep pink
-      noDataColor: '#666666'
+      // Data visualization (pastel green to pastel red for earth texture)
+      dataColorStart: 'rgb(152, 251, 152)',   // Pale green
+      dataColorEnd: 'rgb(255, 160, 160)',     // Pale red
+      noDataColor: '#4a5568'
     }
   }
 }
@@ -120,7 +141,12 @@ export const applyTheme = (theme) => {
   
   // Apply all color variables
   Object.entries(config.colors).forEach(([key, value]) => {
-    root.style.setProperty(`--${key}`, value)
+    if (key === 'globeImageUrl') {
+      // Handle globe image URL specially
+      root.style.setProperty(`--${key}`, value || 'null')
+    } else {
+      root.style.setProperty(`--${key}`, value)
+    }
   })
   
   // Set theme name as data attribute for CSS targeting

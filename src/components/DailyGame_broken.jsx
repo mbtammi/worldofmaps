@@ -102,7 +102,7 @@ function DailyGame() {
       
       {/* Top Left - Game Title */}
       <div className="top-left-title">
-        worldofmaps
+        worldofthemaps
       </div>
       
       {/* Game Instructions Header */}

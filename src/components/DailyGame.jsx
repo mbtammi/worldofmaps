@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import GlobeView from './GlobeView'
-import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
+import { getTodaysDataset, createGameState, processGuess, finalizeGame, toggleHints } from '../data/gameManager'
 import { getLeaderboardData } from '../data/gameStats'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import './DailyGame.css'
@@ -28,20 +28,37 @@ function DailyGame() {
     setShowMenu(false)
   }
 
+  // Hints toggle handler
+  const handleHintsToggle = () => {
+    if (gameState) {
+      const newGameState = toggleHints(gameState)
+      setGameState(newGameState)
+      setShowMenu(false)
+    }
+  }
+
   // Initialize game on component mount
   useEffect(() => {
     const initializeGame = async () => {
       try {
         setLoading(true)
+        console.log('DailyGame: Initializing game...')
+        
         const dataset = await getTodaysDataset()
+        console.log('DailyGame: Dataset loaded:', dataset.title)
+        
         const initialGameState = createGameState(dataset)
         setGameState(initialGameState)
         
         // Load stats for display
         const currentStats = getLeaderboardData()
         setStats(currentStats)
+        
+        console.log('DailyGame: Game initialized successfully')
       } catch (error) {
-        console.error('Failed to initialize game:', error)
+        console.error('DailyGame: Failed to initialize game:', error)
+        // TODO: Show error message to user
+        // For now, we'll just keep loading state showing
       } finally {
         setLoading(false)
       }
@@ -90,7 +107,11 @@ function DailyGame() {
   if (loading || !gameState) {
     return (
       <div className="daily-game">
-        <div className="loading">Loading today's challenge...</div>
+        <div className="loading">
+          <div className="loading-globe">🌍</div>
+          <div>Loading today's data challenge...</div>
+          <div className="loading-subtitle">Fetching live data from global sources</div>
+        </div>
       </div>
     )
   }
@@ -102,7 +123,7 @@ function DailyGame() {
       
       {/* Top Left - Game Title */}
       <div className="top-left-title">
-        worldofmaps
+        worldofthemaps
       </div>
       
       {/* Game Instructions Header */}
@@ -131,19 +152,25 @@ function DailyGame() {
                   setShowMenu(false)
                 }}
               >
-                {showTooltips ? '🏷️ Hide Tooltips' : '🏷️ Show Tooltips'}
+                {showTooltips ? '� Hide Countries' : '� Show Countries'}
               </button>
               <button 
+                className="menu-item" 
+                onClick={handleHintsToggle}
+              >
+                {gameState?.hintsEnabled ? '💡 Disable Hints' : '💡 Enable Hints'}
+              </button>
+              {/* <button 
                 className="menu-item" 
                 onClick={handleThemeSwitch}
               >
                 🎨 Theme: {getAllThemes().find(t => t.id === currentTheme)?.name || 'Dark'}
-              </button>
+              </button> */}
               <button 
                 className="menu-item" 
                 onClick={() => setShowMenu(false)}
               >
-                📊 Stats
+                📊 Stats (Not yet...)
               </button>
             </div>
           )}

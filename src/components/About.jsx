@@ -8,7 +8,7 @@ function About() {
       <Header />
       
       <main className="page-content">
-        <h2>About World of Maps</h2>
+        <h2>About World of the Maps</h2>
         <p>
           World of Maps is inspired by Wordle and GeoGuessr, challenging players 
           to identify what dataset a mysterious 3D globe represents.

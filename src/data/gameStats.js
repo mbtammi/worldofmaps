@@ -1,7 +1,7 @@
 // Game Statistics Management
 // Handles localStorage persistence for game stats
 
-const STATS_KEY = 'worldofmaps_stats'
+const STATS_KEY = 'worldofthemaps_stats'
 
 // Default stats structure
 const defaultStats = {
@@ -135,6 +135,17 @@ export const resetDailyPlay = () => {
 export const getLeaderboardData = () => {
   const stats = getCalculatedStats()
   
+  // Calculate guess range
+  const minGuesses = Math.min(...Object.entries(stats.gamesWonByGuesses)
+    .filter(([key, count]) => count > 0)
+    .map(([key]) => key === '6+' ? 6 : parseInt(key)))
+  
+  const maxGuesses = Math.max(...Object.entries(stats.gamesWonByGuesses)
+    .filter(([key, count]) => count > 0)
+    .map(([key]) => key === '6+' ? 6 : parseInt(key)))
+    
+  const rangeText = stats.totalWins > 0 ? `${minGuesses}-${maxGuesses}` : '-'
+  
   return [
     {
       label: 'Win Rate',
@@ -144,17 +155,79 @@ export const getLeaderboardData = () => {
       label: 'Avg Guesses',
       value: stats.averageGuesses
     },
+    // {
+    //   label: 'Guess Range',
+    //   value: rangeText
+    // },
+    // {
+    //   label: 'Win Streak',
+    //   value: stats.winStreak
+    // },
+    // {
+    //   label: 'Games Played',
+    //   value: stats.totalGames
+    // }
+  ]
+}
+
+// Get game-specific statistics for current dataset
+export const getGameSpecificStats = (dataset) => {
+  if (!dataset) return []
+  
+  const stats = getStats()
+  const datasetType = dataset.id.split('-')[0] // Extract type from ID like 'population-density-2023'
+  const datasetStat = stats.datasetStats[datasetType]
+  
+  // If no stats for this dataset type yet, return default stats
+  if (!datasetStat) {
+    return [
+      {
+        label: 'Dataset',
+        value: dataset.title
+      },
+      {
+        label: 'Difficulty',
+        value: 'New!'
+      },
+      {
+        label: 'Your Attempts',
+        value: '0'
+      },
+      {
+        label: 'Success Rate',
+        value: '-'
+      }
+    ]
+  }
+  
+  const successRate = datasetStat.played > 0 ? Math.round((datasetStat.won / datasetStat.played) * 100) : 0
+  const avgGuesses = datasetStat.played > 0 ? Math.round(datasetStat.totalGuesses / datasetStat.played * 10) / 10 : 0
+  
+  // Determine difficulty based on success rate and average guesses
+  let difficulty = 'Medium'
+  if (successRate >= 70) difficulty = 'Easy'
+  else if (successRate <= 30) difficulty = 'Hard'
+  
+  return [
     {
-      label: 'Win Streak',
-      value: stats.winStreak
+      label: 'Dataset',
+      value: dataset.title
     },
     {
-      label: 'Best Streak',
-      value: stats.maxWinStreak
+      label: 'Difficulty',
+      value: difficulty
     },
     {
-      label: 'Games Played',
-      value: stats.totalGames
+      label: 'Your Attempts',
+      value: datasetStat.played.toString()
+    },
+    {
+      label: 'Success Rate',
+      value: `${successRate}%`
+    },
+    {
+      label: 'Avg Guesses',
+      value: avgGuesses.toString()
     }
   ]
 }
@@ -177,6 +250,7 @@ export default {
   hasPlayedToday,
   resetDailyPlay,
   getLeaderboardData,
+  getGameSpecificStats,
   exportStats,
   clearStats
 }

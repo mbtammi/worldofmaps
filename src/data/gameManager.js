@@ -1,29 +1,59 @@
 // Game Manager - handles daily dataset selection and game state
-import { getDailyDataset, getDatasetByType } from './datasets.js'
+import { getDailyDataset, getDatasetByType, validateDataset } from './datasets.js'
 import { updateStatsAfterGame } from './gameStats.js'
+import { trackGameStart, trackGameComplete, trackGuess, trackHintUsed } from './globalAnalytics.js'
 
 // Get today's dataset using the new dynamic system
 export const getTodaysDataset = async () => {
   try {
-    return await getDailyDataset()
+    console.log('Game Manager: Fetching today\'s dataset...')
+    const dataset = await getDailyDataset()
+    
+    // Validate the dataset before returning it
+    if (!validateDataset(dataset)) {
+      throw new Error('Dataset failed validation')
+    }
+    
+    console.log(`Game Manager: Successfully loaded dataset: ${dataset.title}`)
+    return dataset
   } catch (error) {
-    console.error('Error fetching daily dataset:', error)
+    console.error('Game Manager: Error fetching daily dataset:', error)
+    console.log('Game Manager: Attempting fallback to population density...')
+    
     // Fallback to a default dataset
-    return await getDatasetByType('population-density')
+    try {
+      const fallbackDataset = await getDatasetByType('population-density')
+      if (validateDataset(fallbackDataset)) {
+        console.log('Game Manager: Successfully loaded fallback dataset')
+        return fallbackDataset
+      }
+    } catch (fallbackError) {
+      console.error('Game Manager: Fallback also failed:', fallbackError)
+    }
+    
+    // Last resort: throw error
+    throw new Error('No valid dataset available')
   }
 }
 
 // Game state management
-export const createGameState = (dataset) => ({
-  dataset,
-  guesses: [],
-  incorrectOptions: [], // Track removed wrong options
-  availableOptions: [...dataset.options], // Copy of all options
-  hintsRevealed: 0,
-  isComplete: false,
-  isWon: false,
-  currentHint: null
-})
+export const createGameState = (dataset) => {
+  // Track game start analytics
+  trackGameStart(dataset.id, dataset.title)
+  
+  return {
+    dataset,
+    guesses: [],
+    incorrectOptions: [], // Track removed wrong options
+    availableOptions: [...dataset.options], // Copy of all options
+    hintsRevealed: 0,
+    hintsEnabled: false, // New: hints are disabled by default
+    isComplete: false,
+    isWon: false,
+    currentHint: null,
+    startTime: Date.now() // Track timing for analytics
+  }
+}
 
 // Check if a selected option matches the correct answer
 export const checkGuess = (selectedOption, dataset) => {
@@ -53,6 +83,10 @@ export const getNextHint = (currentHintIndex, dataset) => {
 export const processGuess = (gameState, selectedOption) => {
   const isCorrect = checkGuess(selectedOption, gameState.dataset)
   const newGuesses = [...gameState.guesses, { guess: selectedOption, isCorrect }]
+  const guessNumber = newGuesses.length
+  
+  // Track guess analytics
+  trackGuess(selectedOption, isCorrect, guessNumber, gameState.dataset.id)
   
   if (isCorrect) {
     return {
@@ -62,25 +96,62 @@ export const processGuess = (gameState, selectedOption) => {
       isWon: true
     }
   } else {
-    // Wrong guess - remove wrong options and reveal next hint
+    // Wrong guess - remove wrong options and reveal next hint (if hints are enabled)
     const newAvailableOptions = removeWrongOptions(
       gameState.availableOptions, 
       selectedOption, 
       gameState.dataset.correctAnswers
     )
-    const hintData = getNextHint(gameState.hintsRevealed, gameState.dataset)
+    
+    let newHint = null
+    let newHintsRevealed = gameState.hintsRevealed
+    
+    // Only reveal hints if they're enabled
+    if (gameState.hintsEnabled) {
+      const hintData = getNextHint(gameState.hintsRevealed, gameState.dataset)
+      if (hintData) {
+        newHint = hintData.hint
+        newHintsRevealed = gameState.hintsRevealed + 1
+        // Track hint usage
+        trackHintUsed(newHintsRevealed, gameState.dataset.id)
+      }
+    }
     
     return {
       ...gameState,
       guesses: newGuesses,
       availableOptions: newAvailableOptions,
       incorrectOptions: [...gameState.incorrectOptions, selectedOption],
-      hintsRevealed: gameState.hintsRevealed + 1,
-      currentHint: hintData?.hint || null,
+      hintsRevealed: newHintsRevealed,
+      currentHint: newHint,
       // Check if we've run out of options or hints (game over)
       isComplete: newAvailableOptions.length <= 1 || gameState.hintsRevealed >= gameState.dataset.hints.length - 1,
       isWon: false
     }
+  }
+}
+
+// Toggle hints on/off
+export const toggleHints = (gameState) => {
+  const newHintsEnabled = !gameState.hintsEnabled
+  
+  // If enabling hints and user has made wrong guesses, show appropriate hint
+  let newHint = gameState.currentHint
+  if (newHintsEnabled && gameState.guesses.some(g => !g.isCorrect) && !gameState.currentHint) {
+    const wrongGuesses = gameState.guesses.filter(g => !g.isCorrect).length
+    const hintIndex = Math.min(wrongGuesses - 1, gameState.dataset.hints.length - 1)
+    if (hintIndex >= 0) {
+      newHint = gameState.dataset.hints[hintIndex]
+    }
+  } else if (!newHintsEnabled) {
+    // If disabling hints, hide current hint
+    newHint = null
+  }
+  
+  return {
+    ...gameState,
+    hintsEnabled: newHintsEnabled,
+    currentHint: newHint
   }
 }
 
@@ -91,7 +162,19 @@ export const finalizeGame = (gameState) => {
     return gameState
   }
 
-  // Update stats
+  // Calculate game duration
+  const gameDuration = Date.now() - gameState.startTime
+
+  // Track game completion analytics
+  trackGameComplete(
+    gameState.dataset.id,
+    gameState.isWon,
+    gameState.guesses.length,
+    gameDuration,
+    gameState.hintsRevealed
+  )
+
+  // Update local stats
   const gameResult = {
     isWon: gameState.isWon,
     guessCount: gameState.guesses.length,
@@ -109,5 +192,6 @@ export default {
   checkGuess,
   getNextHint,
   processGuess,
+  toggleHints,
   finalizeGame
 }

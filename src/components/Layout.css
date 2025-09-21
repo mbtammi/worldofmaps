@@ -14,7 +14,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   text-align: center;
-  padding: 4rem 2rem;
+  /* padding: 4rem 2rem; */
 }
 
 .hero h2 {
@@ -84,6 +84,26 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+}
+
+.page-with-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+  z-index: 1;
+}
+
+.page-with-nav > * {
+  position: relative;
+  z-index: 2;
 }
 
 .page-content {
@@ -92,28 +112,36 @@
   margin: 0 auto;
   padding: 3rem 2rem;
   line-height: 1.6;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .page-content h2 {
   font-size: 2.5rem;
   margin-bottom: 2rem;
-  color: #333;
+  color: #ffffff;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .page-content h3 {
   font-size: 1.5rem;
   margin: 2rem 0 1rem 0;
-  color: #444;
+  color: #e2e8f0;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .page-content p {
-  color: #666;
+  color: #cbd5e0;
   margin-bottom: 1.5rem;
   font-size: 1.1rem;
 }
 
 .page-content ul {
-  color: #666;
+  color: #cbd5e0;
   margin-left: 2rem;
   margin-bottom: 2rem;
 }
@@ -131,31 +159,41 @@
 }
 
 .step {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
   padding: 1.5rem;
   border-radius: 12px;
-  border-left: 4px solid #2196f3;
+  border-left: 4px solid #6366f1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .step h3 {
   margin-top: 0;
-  color: #2196f3;
+  color: #a5b4fc;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.step p {
+  color: #cbd5e0;
 }
 
 .tips {
-  background: #e3f2fd;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
   padding: 2rem;
   border-radius: 12px;
   margin-top: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tips h3 {
-  color: #1976d2;
+  color: #a5b4fc;
   margin-top: 0;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .tips ul {
-  color: #333;
+  color: #cbd5e0;
 }
 
 /* Not Found Styles */

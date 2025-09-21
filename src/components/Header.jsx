@@ -1,19 +1,86 @@
-import './Header.css'
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import './Header.css';
 
-function Header() {
+function Header({ theme, onThemeChange }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const getCurrentPage = () => {
+    const path = location.pathname;
+    if (path === '/') return 'game';
+    if (path === '/landing') return 'home';
+    return path.slice(1); // remove leading slash
+  };
+
+  const handleNavigation = (page) => {
+    switch (page) {
+      case 'home':
+        navigate('/landing');
+        break;
+      case 'game':
+        navigate('/');
+        break;
+      case 'about':
+        navigate('/about');
+        break;
+      case 'howToPlay':
+        navigate('/how-to-play');
+        break;
+      default:
+        navigate('/landing');
+    }
+  };
+
+  const currentPage = getCurrentPage();
+
   return (
-    <header className="site-header">
-      <nav className="main-nav">
-        <h1 className="site-title">🌍 World of Maps</h1>
-        <div className="nav-links">
-          <a href="/landing">Home</a>
-          <a href="/about">About</a>
-          <a href="/how-to-play">How to Play</a>
-          <a href="/" className="play-now-btn">Play Now</a>
+    <header className="header">
+      <div className="header-container">
+        <div className="header-logo">
+          <h1 className="logo-text" onClick={() => handleNavigation('home')}>WorldOfTheMaps</h1>
         </div>
-      </nav>
+        
+        <nav className="header-nav">
+          <div className="nav-links">
+            <button
+              onClick={() => handleNavigation('game')}
+              className={`nav-btn play-now-btn ${currentPage === 'game' ? 'nav-btn-active' : ''}`}
+            >
+              Play Now
+            </button>
+            <button
+              onClick={() => handleNavigation('howToPlay')}
+              className={`nav-btn ${currentPage === 'how-to-play' ? 'nav-btn-active' : ''}`}
+            >
+              How to Play
+            </button>
+            <button
+              onClick={() => handleNavigation('about')}
+              className={`nav-btn ${currentPage === 'about' ? 'nav-btn-active' : ''}`}
+            >
+              About
+            </button>
+          </div>
+          
+          {theme && onThemeChange && (
+            <div className="theme-selector">
+              <select 
+                value={theme} 
+                onChange={(e) => onThemeChange(e.target.value)}
+                className="theme-select"
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="color">Color</option>
+              </select>
+            </div>
+          )}
+        </nav>
+      </div>
     </header>
-  )
+  );
 }
 
-export default Header
+export default Header;

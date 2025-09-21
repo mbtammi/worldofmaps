@@ -1,0 +1,196 @@
+// Daily Challenge System
+// Manages daily dataset rotation with timezone-aware switching
+
+import { getAllAvailableDatasets } from './dataSources.js'
+import { fetchDataset } from './dataFetcher.js'
+
+// Challenge configuration
+const CHALLENGE_CONFIG = {
+  // What time (UTC) should the daily challenge reset?
+  RESET_HOUR_UTC: 0, // Midnight UTC
+  
+  // How many days should we cycle through before repeating?
+  CYCLE_LENGTH_DAYS: 365,
+  
+  // Seed for reproducible randomization
+  RANDOM_SEED: 'worldofmaps2025',
+  
+  // Fallback datasets if API fails
+  FALLBACK_DATASETS: [
+    'population-density',
+    'gdp-per-capita', 
+    'life-expectancy',
+    'co2-emissions',
+    'internet-users',
+    'literacy-rate',
+    'unemployment-rate'
+  ]
+}
+
+// Simple seeded random number generator
+function seededRandom(seed) {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  
+  return function() {
+    hash = ((hash * 1103515245) + 12345) & 0x7fffffff
+    return hash / 0x7fffffff
+  }
+}
+
+// Get the current day index (days since epoch, adjusted for reset time)
+export function getCurrentDayIndex() {
+  const now = new Date()
+  const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000))
+  
+  // Adjust for reset hour
+  const adjustedTime = new Date(utcNow.getTime() - (CHALLENGE_CONFIG.RESET_HOUR_UTC * 60 * 60 * 1000))
+  
+  // Calculate days since epoch (Jan 1, 1970)
+  const epochStart = new Date('1970-01-01T00:00:00Z')
+  const daysSinceEpoch = Math.floor((adjustedTime.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
+  
+  return daysSinceEpoch % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+}
+
+// Get the dataset ID for a specific day
+function getDatasetForDay(dayIndex) {
+  const availableDatasets = getAllAvailableDatasets()
+  
+  // Filter to high and medium availability datasets for daily challenges
+  const suitableDatasets = availableDatasets.filter(dataset => 
+    dataset.estimatedAvailability === 'high' || dataset.estimatedAvailability === 'medium'
+  )
+  
+  if (suitableDatasets.length === 0) {
+    console.warn('No suitable datasets found, using fallback')
+    return CHALLENGE_CONFIG.FALLBACK_DATASETS[dayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
+  }
+  
+  // Use seeded randomization for reproducible but seemingly random selection
+  const rng = seededRandom(CHALLENGE_CONFIG.RANDOM_SEED + dayIndex)
+  const randomIndex = Math.floor(rng() * suitableDatasets.length)
+  
+  return suitableDatasets[randomIndex].id
+}
+
+// Get today's dataset
+export async function getTodaysDataset() {
+  const todayIndex = getCurrentDayIndex()
+  const datasetId = getDatasetForDay(todayIndex)
+  
+  console.log(`Today's challenge (day ${todayIndex}): ${datasetId}`)
+  
+  try {
+    const dataset = await fetchDataset(datasetId)
+    
+    // Add challenge metadata
+    dataset.challengeInfo = {
+      dayIndex: todayIndex,
+      challengeDate: new Date().toISOString().split('T')[0],
+      nextResetTime: getNextResetTime()
+    }
+    
+    return dataset
+  } catch (error) {
+    console.error('Error fetching today\'s dataset, trying fallback:', error)
+    
+    // Try a fallback dataset
+    const fallbackId = CHALLENGE_CONFIG.FALLBACK_DATASETS[todayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
+    try {
+      return await fetchDataset(fallbackId)
+    } catch (fallbackError) {
+      console.error('Fallback dataset also failed:', fallbackError)
+      throw new Error('Unable to load today\'s challenge. Please try again later.')
+    }
+  }
+}
+
+// Get the next reset time
+function getNextResetTime() {
+  const now = new Date()
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  tomorrow.setUTCHours(CHALLENGE_CONFIG.RESET_HOUR_UTC, 0, 0, 0)
+  return tomorrow
+}
+
+// Get time until next reset (for display purposes)
+export function getTimeUntilReset() {
+  const now = new Date()
+  const nextReset = getNextResetTime()
+  const diff = nextReset.getTime() - now.getTime()
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  
+  return { hours, minutes, totalMs: diff }
+}
+
+// Preview upcoming datasets (for admin/debug purposes)
+export function getUpcomingDatasets(days = 7) {
+  const currentDay = getCurrentDayIndex()
+  const upcoming = []
+  
+  for (let i = 0; i < days; i++) {
+    const dayIndex = (currentDay + i) % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+    const datasetId = getDatasetForDay(dayIndex)
+    const date = new Date()
+    date.setDate(date.getDate() + i)
+    
+    upcoming.push({
+      dayIndex,
+      date: date.toISOString().split('T')[0],
+      datasetId,
+      isToday: i === 0
+    })
+  }
+  
+  return upcoming
+}
+
+// Check if user has played today
+export function hasPlayedToday() {
+  const todayIndex = getCurrentDayIndex()
+  const lastPlayedDay = localStorage.getItem('worldofmaps_last_played_day')
+  
+  return lastPlayedDay && parseInt(lastPlayedDay) === todayIndex
+}
+
+// Mark today as played
+export function markTodayAsPlayed() {
+  const todayIndex = getCurrentDayIndex()
+  localStorage.setItem('worldofmaps_last_played_day', todayIndex.toString())
+}
+
+// Get dataset by specific date (for testing/admin)
+export async function getDatasetByDate(dateString) {
+  const targetDate = new Date(dateString + 'T00:00:00Z')
+  const epochStart = new Date('1970-01-01T00:00:00Z')
+  const dayIndex = Math.floor((targetDate.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
+  
+  const datasetId = getDatasetForDay(dayIndex % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS)
+  return await fetchDataset(datasetId)
+}
+
+// Admin function to force refresh today's dataset
+export function forceRefreshToday() {
+  const todayIndex = getCurrentDayIndex()
+  const cacheKey = `worldofmaps_data_daily_${todayIndex}`
+  localStorage.removeItem(cacheKey)
+  console.log('Forced refresh of today\'s dataset')
+}
+
+export default {
+  getTodaysDataset,
+  getCurrentDayIndex,
+  getTimeUntilReset,
+  getUpcomingDatasets,
+  hasPlayedToday,
+  markTodayAsPlayed,
+  getDatasetByDate,
+  forceRefreshToday
+}

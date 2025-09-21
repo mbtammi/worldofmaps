@@ -7,6 +7,11 @@ function GlobeView({ dataset, showTooltips = false }) {
   const globeEl = useRef()
   const [globeSize, setGlobeSize] = useState({ width: 800, height: 600 })
   const [countries, setCountries] = useState([])
+  const [globeImageUrl, setGlobeImageUrl] = useState(null)
+  const [atmosphereColor, setAtmosphereColor] = useState('#4a90e2')
+  const [backgroundColor, setBackgroundColor] = useState('rgba(0,0,0,0)')
+  const [themeUpdateTrigger, setThemeUpdateTrigger] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Convert dataset to lookup object - memoized for performance
   const dataMap = useMemo(() => {
@@ -24,6 +29,48 @@ function GlobeView({ dataset, showTooltips = false }) {
 
   // Memoize max value calculation
   const maxValue = useMemo(() => Math.max(...Object.values(dataMap)), [dataMap])
+
+  // Update globe properties when theme changes
+  useEffect(() => {
+    const updateGlobeTheme = () => {
+      const root = document.documentElement
+      const computedStyle = getComputedStyle(root)
+      
+      // Get globe image URL
+      const themeGlobeUrl = computedStyle.getPropertyValue('--globeImageUrl').trim()
+      if (themeGlobeUrl === 'null' || !themeGlobeUrl) {
+        setGlobeImageUrl(null)
+      } else {
+        setGlobeImageUrl(themeGlobeUrl)
+      }
+      
+      // Get atmosphere color
+      const themeAtmosphereColor = computedStyle.getPropertyValue('--globeAtmosphereColor').trim()
+      if (themeAtmosphereColor) {
+        setAtmosphereColor(themeAtmosphereColor)
+      }
+      
+      // Get background color (water color)
+      const themeWaterColor = computedStyle.getPropertyValue('--globeWaterColor').trim()
+      if (themeWaterColor) {
+        setBackgroundColor(themeWaterColor)
+      }
+      
+      // Trigger theme update for color recalculation
+      setThemeUpdateTrigger(prev => prev + 1)
+    }
+    
+    updateGlobeTheme()
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(updateGlobeTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    })
+    
+    return () => observer.disconnect()
+  }, [])
 
   // Dynamic color scale based on CSS custom properties - optimized with theme support
   const getColor = useMemo(() => (value) => {
@@ -57,22 +104,18 @@ function GlobeView({ dataset, showTooltips = false }) {
     const blue = Math.floor(b1 + (normalized * (b2 - b1)))
     
     return `rgb(${red}, ${green}, ${blue})`
-  }, [maxValue])
+  }, [maxValue, themeUpdateTrigger])
 
-  // Load countries data
+  // Load countries data - optimized for faster loading
   useEffect(() => {
-    fetch('//unpkg.com/world-atlas/countries-50m.json')
+    // Use a smaller resolution for faster loading (110m instead of 50m)
+    fetch('//unpkg.com/world-atlas/countries-110m.json')
       .then(res => res.json())
       .then(topology => {
         const countries = feature(topology, topology.objects.countries).features
         
         // Enrich with our data
         const enrichedCountries = countries.map((country, index) => {
-          // Debug: log the first few countries to see available properties
-          if (index < 3) {
-            console.log('Country properties for', country.properties.NAME, ':', Object.keys(country.properties))
-          }
-          
           // Try different property names for country code
           const iso2 = country.properties.ISO_A2 || country.properties.iso_a2
           const iso3 = country.properties.ISO_A3 || country.properties.iso_a3
@@ -82,11 +125,6 @@ function GlobeView({ dataset, showTooltips = false }) {
           let value = dataMap[iso2] || dataMap[iso3] || dataMap[countryName.toLowerCase()] || 0
           
           const color = getColor(value)
-          
-          // Debug specific countries
-          if (countryName.includes('United States') || countryName.includes('China') || countryName.includes('India')) {
-            console.log(`${countryName} Debug - ISO2: ${iso2}, ISO3: ${iso3}, Value: ${value}`)
-          }
           
           return {
             ...country,
@@ -99,9 +137,17 @@ function GlobeView({ dataset, showTooltips = false }) {
         
         console.log('Globe loaded with', enrichedCountries.length, 'countries')
         setCountries(enrichedCountries)
+        setIsLoading(false)
       })
-      .catch(err => console.error('Error loading countries:', err))
-  }, [dataMap, getColor])
+      .catch(error => {
+        console.error('Error loading countries:', error)
+        setIsLoading(false)
+      })
+      .catch(err => {
+        console.error('Error loading countries:', err)
+        setIsLoading(false)
+      })
+  }, [dataMap, getColor, themeUpdateTrigger])
 
   // Handle window resize for responsive globe
   useEffect(() => {
@@ -133,15 +179,27 @@ function GlobeView({ dataset, showTooltips = false }) {
 
   return (
     <div className="globe-view-container">
+      {isLoading && (
+        <div className="globe-loading">
+          <div className="globe-spinner"></div>
+          <p>Loading world data...</p>
+          <div className="loading-progress">
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+          </div>
+        </div>
+      )}
       <Globe
+        key={`globe-${themeUpdateTrigger}`}
         ref={globeEl}
         width={globeSize.width}
         height={globeSize.height}
-        backgroundColor="rgba(0,0,0,0)"
+        backgroundColor={backgroundColor}
         animateIn={true}
         
-        // Use a very subtle earth texture that won't interfere with colors
-        globeImageUrl={null} // Remove earth texture to see colors better
+        // Use theme-appropriate earth texture
+        globeImageUrl={globeImageUrl}
         
         // Use polygons instead of choropleth
         polygonsData={countries}
@@ -152,19 +210,19 @@ function GlobeView({ dataset, showTooltips = false }) {
         polygonAltitude={0.005} // Much lower altitude for better performance
         polygonCapCurvatureResolution={5} // Lower resolution for better performance
         polygonLabel={showTooltips ? (d => {
-          const value = d.value
           const name = d.countryName || d.properties?.NAME || 'Unknown'
-          return `<b>${name}</b><br />${dataset?.title || 'Population Density'}: ${value || 'N/A'}${dataset?.title?.includes('Density') ? ' per km²' : ''}`
+          return `<b>${name}</b>`
         }) : undefined}
         
         // Styling
         showAtmosphere={true}
-        atmosphereColor="#4a90e2"
+        atmosphereColor={atmosphereColor}
         atmosphereAltitude={0.15}
         
         // Interaction
         onGlobeReady={() => {
           console.log('Globe loaded with', countries.length, 'countries')
+          setIsLoading(false)
         }}
       />
     </div>

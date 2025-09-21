@@ -5,6 +5,10 @@
   overflow: hidden;
 }
 
+.body {
+    overflow: hidden;
+}
+
 /* Top Left - Game Title */
 .top-left-title {
   position: fixed;
@@ -124,12 +128,12 @@
   top: 50%;
   right: 20px;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--glassBackground);
   backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glassBorder);
   border-radius: 12px;
   padding: 15px;
-  color: white;
+  color: var(--textPrimary);
   font-size: 0.9em;
   min-width: 120px;
   z-index: 15;
@@ -181,12 +185,12 @@
   top: 50%;
   left: 20px;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--glassBackground);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glassBorder);
   border-radius: 15px;
   padding: 20px;
-  color: white;
+  color: var(--textPrimary);
   max-width: 280px;
   max-height: 70vh;
   overflow-y: auto;
@@ -213,10 +217,10 @@
 
 .option-btn {
   padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--glassBackground);
+  border: 1px solid var(--glassBorder);
   border-radius: 8px;
-  color: white;
+  color: var(--textPrimary);
   font-size: 0.9em;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -224,8 +228,8 @@
 }
 
 .option-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--buttonHover);
+  border-color: var(--glassBorder);
   transform: translateY(-1px);
 }
 
@@ -243,28 +247,32 @@
 .lose-message h2 {
   margin: 0 0 10px 0;
   font-size: 1.3em;
+  color: var(--textPrimary);
 }
 
 .win-message {
-  color: #d4edda;
+  color: var(--textPrimary);
 }
 
 .lose-message {
-  color: #f8d7da;
+  color: var(--textPrimary);
 }
 
 .game-results p {
   font-size: 0.9em;
   margin: 8px 0;
   line-height: 1.3;
+  color: var(--textSecondary);
 }
 
 .fun-fact {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glassBackground);
+  border: 1px solid var(--glassBorder);
   border-radius: 6px;
   padding: 8px;
   font-size: 0.85em;
   margin: 10px 0;
+  color: var(--textPrimary);
 }
 
 .play-again-btn {
@@ -303,10 +311,30 @@
   font-size: 1.2em;
   z-index: 100;
   text-align: center;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 20px 40px;
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
+  background: var(--glassBackground);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glassBorder);
+  padding: 30px 50px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.loading-globe {
+  font-size: 2.5em;
+  margin-bottom: 15px;
+  animation: spin 2s linear infinite;
+}
+
+.loading-subtitle {
+  font-size: 0.8em;
+  color: var(--textSecondary);
+  margin-top: 10px;
+  opacity: 0.8;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive Design */
@@ -406,21 +434,15 @@
 }
 
 .legend-gradient {
-  margin-top: 20px;
-  height: 10px;
-  background: linear-gradient(to right, 
-    rgb(100, 180, 120), /* Mint green */
-    rgb(120, 170, 110),
-    rgb(140, 160, 100),
-    rgb(160, 150, 90),
-    rgb(180, 140, 80),
-    rgb(200, 130, 70),
-    rgb(220, 120, 60),
-    rgb(240, 110, 55),
-    rgb(255, 100, 50)  /* Coral red */
+  width: 100%;
+  height: 12px;
+  background: linear-gradient(
+    to right,
+    var(--dataColorStart),
+    var(--dataColorEnd)
   );
-  border-radius: 5px;
-  margin-bottom: 5px;
+  border-radius: 6px;
+  margin-top: 16px;
 }
 
 .legend-labels {
