@@ -345,63 +345,172 @@
     left: 15px;
   }
   
+  .game-instructions {
+    margin-top: -35vh;
+    font-size: 1em;
+    padding: 10px 20px;
+    left: 30%;
+    width: 40%;
+  }
+  
+  /* Mobile: Stack controls vertically on top-right */
   .top-right-controls {
     top: 15px;
     right: 15px;
+    flex-direction: column;
     gap: 6px;
   }
   
   .control-btn {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     font-size: 14px;
   }
   
+  /* Mobile: Move options to bottom with scroll capability */
   .left-options {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     top: auto;
-    bottom: 20px;
-    left: 15px;
-    right: 15px;
     transform: none;
     max-width: none;
-    max-height: 40vh;
+    max-height: 45vh;
+    border-radius: 15px 15px 0 0;
+    margin: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
+  /* Mobile: Position stats on right, same height as controls */
   .right-leaderboard {
-    top: 80px;
-    right: 15px;
+    position: fixed;
+    top: 15px;
+    right: 70px; /* Leave space for controls */
     transform: none;
+    font-size: 0.75em;
+    padding: 8px 10px;
+    min-width: 100px;
+    /* Calculate height to match stacked controls */
+    height: calc(40px * 3 + 6px * 2); /* 3 buttons + 2 gaps */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .right-leaderboard h4 {
     font-size: 0.8em;
-    padding: 10px;
+    margin: 0 0 5px 0;
+  }
+  
+  .stat-item {
+    margin: 2px 0;
+    font-size: 0.7em;
+  }
+  
+  .legend-gradient {
+    height: 8px;
+    margin-top: 5px;
+  }
+  
+  .legend-labels {
+    font-size: 0.65em;
+    margin-top: 2px;
   }
   
   .options-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+    gap: 8px;
+    margin: 10px 0;
   }
   
   .option-btn {
-    padding: 8px 12px;
-    font-size: 0.8em;
+    padding: 12px 8px;
+    font-size: 0.85em;
+  }
+  
+  /* Add scroll indicator for options */
+  .left-options::before {
+    content: '';
+    position: sticky;
+    top: 0;
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    margin: -20px -20px 15px -20px;
+    border-radius: 15px 15px 0 0;
   }
 }
 
 @media (max-width: 480px) {
+  /* Extra small screens: single column options */
   .options-grid {
     grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .legend-gradient {
+    margin-top: 1px !important;
+  }
+  
+  .option-btn {
+    padding: 14px 12px;
+    font-size: 0.9em;
   }
   
   .left-options {
-    max-height: 35vh;
+    max-height: 30vh;
+    padding: 15px;
   }
   
+  /* Adjust stats position for smaller screens */
   .right-leaderboard {
-    position: relative;
-    top: auto;
-    right: auto;
-    transform: none;
-    margin: 10px 15px;
-    width: auto;
+    right: 60px;
+    min-width: 90px;
+    padding: 6px 8px;
+    height: 106px;
+  }
+  
+  .control-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+  
+  .right-leaderboard h4 {
+    font-size: 0.75em;
+  }
+  
+  .stat-item {
+    font-size: 0.65em;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .right-leaderboard {
+    /* On very small screens, move stats to top */
+    position: fixed;
+    top: 70px;
+    right: 15px;
+    left: 15px;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  
+  .top-right-controls {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    flex-direction: row;
+    gap: 4px;
+  }
+  
+  .control-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
   }
 }
 

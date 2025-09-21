@@ -41,11 +41,19 @@ export const createGameState = (dataset) => {
   // Track game start analytics
   trackGameStart(dataset.id, dataset.title)
   
+  // Create a fresh shuffle of options to ensure randomization
+  const shuffledOptions = [...dataset.options]
+  // Fisher-Yates shuffle algorithm for true randomization
+  for (let i = shuffledOptions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]]
+  }
+  
   return {
     dataset,
     guesses: [],
     incorrectOptions: [], // Track removed wrong options
-    availableOptions: [...dataset.options], // Copy of all options
+    availableOptions: shuffledOptions, // Use freshly shuffled options
     hintsRevealed: 0,
     hintsEnabled: false, // New: hints are disabled by default
     isComplete: false,
@@ -124,8 +132,9 @@ export const processGuess = (gameState, selectedOption) => {
       incorrectOptions: [...gameState.incorrectOptions, selectedOption],
       hintsRevealed: newHintsRevealed,
       currentHint: newHint,
-      // Check if we've run out of options or hints (game over)
-      isComplete: newAvailableOptions.length <= 1 || gameState.hintsRevealed >= gameState.dataset.hints.length - 1,
+      // Check if we've run out of options (only 1 left means correct answer remains)
+      // Don't end game based on hints unless hints are enabled and all hints used
+      isComplete: newAvailableOptions.length <= 1,
       isWon: false
     }
   }
