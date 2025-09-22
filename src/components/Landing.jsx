@@ -1,10 +1,18 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Header from './Header'
 import Footer from './Footer'
 import './Landing.css'
 
 function Landing() {
   const navigate = useNavigate();
+  const [playerCount, setPlayerCount] = useState('100+')
+
+  // Placeholder: in future fetch from an API or analytics aggregate
+  useEffect(() => {
+    // Example: fetch('/api/players-today').then(r=>r.json()).then(d=> setPlayerCount(d.count))
+    // For now keep static or derive from local heuristics
+  }, [])
 
   return (
     <div className="landing-page">
@@ -14,12 +22,12 @@ function Landing() {
         {/* Hero Section */}
         <section className="landing-hero">
           <div className="landing-hero-content">
-            <h1>Guess the Globe, Master the World!</h1>
+            <h1>Wordle, but for MAPS!</h1>
             <p className="landing-hero-subtitle">
               A daily geography puzzle game that challenges your knowledge of world data through beautiful 3D globe visualizations
             </p>
             <div className="games-counter">
-              <span className="counter-text">Join <strong>?,???</strong> players worldwide!</span>
+              <span className="counter-text">Join <strong className="player-count-gradient">{playerCount}</strong> players worldwide!</span>
             </div>
             <button 
               onClick={() => navigate('/')} 

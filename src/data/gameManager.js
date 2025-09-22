@@ -188,7 +188,8 @@ export const finalizeGame = (gameState) => {
     isWon: gameState.isWon,
     guessCount: gameState.guesses.length,
     datasetType: gameState.dataset.id.split('-')[0], // Extract type from ID
-    datasetTitle: gameState.dataset.title
+    datasetTitle: gameState.dataset.title,
+    datasetId: gameState.dataset.id
   }
 
   updateStatsAfterGame(gameResult)

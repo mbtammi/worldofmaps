@@ -195,10 +195,27 @@
 
 .counter-text strong {
   font-weight: 800;
-  background: linear-gradient(45deg, #fff, #f0f0f0);
+  background: linear-gradient(90deg, #6ee7ff, #7f78ff, #ff7ce5);
+  background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s linear infinite;
+}
+
+.player-count-gradient {
+  background: linear-gradient(90deg, #6ee7ff, #7f78ff, #ff7ce5);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .landing-cta-button {

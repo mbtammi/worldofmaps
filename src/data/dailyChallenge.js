@@ -7,7 +7,10 @@ import { fetchDataset } from './dataFetcher.js'
 // Challenge configuration
 const CHALLENGE_CONFIG = {
   // What time (UTC) should the daily challenge reset?
-  RESET_HOUR_UTC: 0, // Midnight UTC
+  // Daily reset time: 07:00 Helsinki time.
+  // Finland is UTC+2 (standard) / UTC+3 (DST). For simplicity we fix to 05:00 UTC which maps to 07:00 during standard time
+  // and 08:00 during DST. If exact 07:00 local time across DST is required, we'd need to compute Europe/Helsinki offset.
+  RESET_HOUR_UTC: 5,
   
   // How many days should we cycle through before repeating?
   CYCLE_LENGTH_DAYS: 365,

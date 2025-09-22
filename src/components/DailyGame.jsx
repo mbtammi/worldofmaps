@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame, toggleHints } from '../data/gameManager'
+import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
 import { getLeaderboardData } from '../data/gameStats'
+import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import './DailyGame.css'
 
@@ -13,6 +15,10 @@ function DailyGame() {
   const [stats, setStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentTheme, setCurrentTheme] = useState('dark')
+  const leftOptionsRef = useRef(null)
+  const [alreadyPlayedModal, setAlreadyPlayedModal] = useState(false)
+  const [progressLoaded, setProgressLoaded] = useState(false)
+  const [globalAvg, setGlobalAvg] = useState(null)
 
   // Initialize theme on mount
   useEffect(() => {
@@ -48,11 +54,66 @@ function DailyGame() {
         console.log('DailyGame: Dataset loaded:', dataset.title)
         
         const initialGameState = createGameState(dataset)
-        setGameState(initialGameState)
+
+        // Attempt to load saved progress
+        try {
+          const dayKey = `worldofmaps_daily_progress_${dataset.challengeInfo?.dayIndex || 'unknown'}`
+          const savedRaw = localStorage.getItem(dayKey)
+          if (savedRaw) {
+            const saved = JSON.parse(savedRaw)
+            if (saved.datasetId === dataset.id) {
+              // Rebuild game state
+              const restored = {
+                ...initialGameState,
+                guesses: saved.guesses || [],
+                isComplete: saved.isComplete || false,
+                isWon: saved.isWon || false,
+                availableOptions: saved.availableOptions || initialGameState.availableOptions,
+                incorrectOptions: saved.incorrectOptions || [],
+              }
+              setGameState(restored)
+              if (restored.isComplete) {
+                // Mark as played (in case) and show modal optionally
+                markTodayAsPlayed()
+              }
+            } else {
+              setGameState(initialGameState)
+            }
+          } else {
+            setGameState(initialGameState)
+          }
+        } catch (e) {
+          console.warn('Failed to restore saved progress', e)
+          setGameState(initialGameState)
+        } finally {
+          setProgressLoaded(true)
+        }
         
         // Load stats for display
         const currentStats = getLeaderboardData()
         setStats(currentStats)
+        // Attempt to load cached global avg first (for instant display)
+        try {
+          const dayIndex = dataset?.challengeInfo?.dayIndex
+          if (dayIndex != null) {
+            const cacheKey = `worldofmaps_global_avg_${dayIndex}`
+            const cached = localStorage.getItem(cacheKey)
+            if (cached) {
+              const num = parseFloat(cached)
+              if (!Number.isNaN(num)) setGlobalAvg(num)
+            }
+            // Kick off fresh fetch (non-blocking)
+            fetchDailyGlobalStats(dayIndex).then(data => {
+              if (data && typeof data.avgGuesses === 'number') {
+                const rounded = Math.round(Number(data.avgGuesses) * 10) / 10
+                if (!Number.isNaN(rounded)) {
+                  setGlobalAvg(rounded)
+                  localStorage.setItem(cacheKey, rounded.toString())
+                }
+              }
+            })
+          }
+        } catch(e){/* ignore */}
         
         console.log('DailyGame: Game initialized successfully')
       } catch (error) {
@@ -80,13 +141,55 @@ function DailyGame() {
     if (gameState && !gameState.isComplete) {
       const newGameState = processGuess(gameState, selectedOption)
       setGameState(newGameState)
+
+      // Persist progress after each guess
+      try {
+        const dayIndex = gameState.dataset.challengeInfo?.dayIndex
+        const dayKey = `worldofmaps_daily_progress_${dayIndex}`
+        const toSave = {
+          datasetId: gameState.dataset.id,
+          guesses: newGameState.guesses,
+          isComplete: newGameState.isComplete,
+          isWon: newGameState.isWon,
+          availableOptions: newGameState.availableOptions,
+          incorrectOptions: newGameState.incorrectOptions
+        }
+        localStorage.setItem(dayKey, JSON.stringify(toSave))
+      } catch (e) {
+        console.warn('Failed saving progress', e)
+      }
       
-      // If game is complete, finalize it and update stats
       if (newGameState.isComplete) {
         finalizeGame(newGameState)
-        // Refresh stats display
+        markTodayAsPlayed()
         const updatedStats = getLeaderboardData()
         setStats(updatedStats)
+        // Refresh global average after submission (delayed to allow backend aggregation)
+        const dayIndex = newGameState.dataset.challengeInfo?.dayIndex
+        if (dayIndex != null) {
+          setTimeout(() => {
+            fetchDailyGlobalStats(dayIndex).then(data => {
+              if (data && typeof data.avgGuesses === 'number') {
+                const rounded = Math.round(Number(data.avgGuesses) * 10) / 10
+                if (!Number.isNaN(rounded)) {
+                  setGlobalAvg(rounded)
+                  try { localStorage.setItem(`worldofmaps_global_avg_${dayIndex}`, rounded.toString()) } catch(_){}
+                }
+              }
+            })
+          }, 800)
+        }
+        try {
+          submitGlobalResult({
+            datasetId: newGameState.dataset.id,
+            dayIndex: newGameState.dataset.challengeInfo?.dayIndex,
+            guessCount: newGameState.guesses.length,
+            isWon: newGameState.isWon,
+            durationMs: Date.now() - newGameState.startTime
+          })
+        } catch (e) {
+          console.warn('Submit global result failed', e)
+        }
       }
     }
   }
@@ -103,8 +206,29 @@ function DailyGame() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showMenu])
 
+  // On load after game state ready, if already played and game is complete show modal
+  useEffect(() => {
+    if (gameState && gameState.isComplete && hasPlayedToday()) {
+      setAlreadyPlayedModal(true)
+    }
+  }, [gameState])
+
+  // Check for overflow and add class for scroll indicator
+  useEffect(() => {
+    if (leftOptionsRef.current && gameState && !gameState.isComplete) {
+      const element = leftOptionsRef.current
+      const hasOverflow = element.scrollHeight > element.clientHeight
+      
+      if (hasOverflow) {
+        element.classList.add('has-overflow')
+      } else {
+        element.classList.remove('has-overflow')
+      }
+    }
+  }, [gameState])
+
   // Show loading if game state isn't ready
-  if (loading || !gameState) {
+  if (loading || !gameState || !progressLoaded) {
     return (
       <div className="daily-game">
         <div className="loading">
@@ -118,6 +242,18 @@ function DailyGame() {
 
   return (
     <div className="daily-game">
+      {alreadyPlayedModal && (
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,background:'rgba(0,0,0,0.6)'}}>
+          <div style={{background:'var(--glassBackground)',backdropFilter:'blur(12px)',border:'1px solid var(--glassBorder)',padding:'30px 35px',borderRadius:16,maxWidth:320,textAlign:'center'}}>
+            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>Already Played</h2>
+            <p style={{fontSize:'0.9em',lineHeight:1.4,margin:'0 0 18px'}}>You already finished today’s map. Come back tomorrow or play other maps.</p>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <button className="play-again-btn" onClick={() => { window.location.href='/play' }}>Play More Maps</button>
+              <button className="option-btn" onClick={() => setAlreadyPlayedModal(false)} style={{fontSize:'0.8em'}}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Fullscreen Globe Background */}
       <GlobeView dataset={gameState.dataset} showTooltips={showTooltips} />
       
@@ -154,12 +290,12 @@ function DailyGame() {
               >
                 {showTooltips ? '� Hide Countries' : '� Show Countries'}
               </button>
-              <button 
+              {/* <button 
                 className="menu-item" 
                 onClick={handleHintsToggle}
               >
                 {gameState?.hintsEnabled ? '💡 Disable Hints' : '💡 Enable Hints'}
-              </button>
+              </button> */}
               {/* <button 
                 className="menu-item" 
                 onClick={handleThemeSwitch}
@@ -179,13 +315,17 @@ function DailyGame() {
       
       {/* Right Middle - Leaderboard */}
       <div className="right-leaderboard">
-        <h4>Your Stats</h4>
+        <h4>Game Stats</h4>
         {stats.map((stat, index) => (
           <div key={index} className="stat-item">
             <span>{stat.label}:</span>
             <span>{stat.value}</span>
           </div>
         ))}
+        <div className="stat-item" style={{marginTop:6,borderTop:'1px solid rgba(255,255,255,0.1)',paddingTop:6}}>
+          <span>Global Avg</span>
+          <span>{globalAvg !== null ? globalAvg.toFixed(1) : '—'}</span>
+        </div>
         <div className="legend-gradient"></div>
         <div className="legend-labels">
           <span>Min</span>
@@ -194,7 +334,7 @@ function DailyGame() {
       </div>
       
       {/* Left Side - Game Options */}
-      <div className="left-options">
+      <div className="left-options" ref={leftOptionsRef}>
         {/* Current hint if available */}
         {gameState.currentHint && (
           <div className="hint-display">

@@ -36,10 +36,28 @@ function GlobeView({ dataset, showTooltips = false }) {
       const root = document.documentElement
       const computedStyle = getComputedStyle(root)
       
-      // Get globe image URL
+      // Get globe image URL (texture). If none provided, synthesize a flat texture using water color
       const themeGlobeUrl = computedStyle.getPropertyValue('--globeImageUrl').trim()
+      const themeWaterColor = computedStyle.getPropertyValue('--globeWaterColor').trim() || '#E6F7FF'
       if (themeGlobeUrl === 'null' || !themeGlobeUrl) {
-        setGlobeImageUrl(null)
+        // Create (or reuse cached) data URL for flat color texture to avoid black oceans
+        try {
+          const cacheKey = `__flat_globe_${themeWaterColor}`
+          let flatUrl = sessionStorage.getItem(cacheKey)
+          if (!flatUrl) {
+            const canvas = document.createElement('canvas')
+            canvas.width = 2
+            canvas.height = 1
+            const ctx = canvas.getContext('2d')
+            ctx.fillStyle = themeWaterColor
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            flatUrl = canvas.toDataURL('image/png')
+            sessionStorage.setItem(cacheKey, flatUrl)
+          }
+          setGlobeImageUrl(flatUrl)
+        } catch (e) {
+          setGlobeImageUrl(null)
+        }
       } else {
         setGlobeImageUrl(themeGlobeUrl)
       }
@@ -50,11 +68,8 @@ function GlobeView({ dataset, showTooltips = false }) {
         setAtmosphereColor(themeAtmosphereColor)
       }
       
-      // Get background color (water color)
-      const themeWaterColor = computedStyle.getPropertyValue('--globeWaterColor').trim()
-      if (themeWaterColor) {
-        setBackgroundColor(themeWaterColor)
-      }
+      // Get background color (space / surrounding background or fallback water color behind sphere)
+      if (themeWaterColor) setBackgroundColor(themeWaterColor)
       
       // Trigger theme update for color recalculation
       setThemeUpdateTrigger(prev => prev + 1)

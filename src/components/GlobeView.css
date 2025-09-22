@@ -3,6 +3,7 @@
   /* Default theme values (Dark mode) */
   --globeBackground: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0c29 100%);
   --glassBackground: rgba(0, 0, 0, 0.1);
+  --strongGlassBackground: rgba(0, 0, 0, 0.5);
   --glassBorder: rgba(255, 255, 255, 0.1);
   --textPrimary: rgba(255, 255, 255, 0.9);
   --textSecondary: rgba(255, 255, 255, 0.7);

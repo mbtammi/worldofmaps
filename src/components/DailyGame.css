@@ -380,7 +380,10 @@
     border-radius: 15px 15px 0 0;
     margin: 0;
     overflow-y: auto;
+    border: 0;
     -webkit-overflow-scrolling: touch;
+    padding-left: 5vw;
+    padding-right: 5vw;
   }
   
   /* Mobile: Position stats on right, same height as controls */
@@ -419,27 +422,42 @@
     margin-top: 2px;
   }
   
+  /* Mobile: Keep single column for options */
   .options-grid {
-    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 8px;
     margin: 10px 0;
   }
   
   .option-btn {
-    padding: 12px 8px;
-    font-size: 0.85em;
+    padding: 12px 15px;
+    font-size: 0.9em;
   }
   
-  /* Add scroll indicator for options */
-  .left-options::before {
-    content: '';
-    position: sticky;
-    top: 0;
-    display: block;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    margin: -20px -20px 15px -20px;
-    border-radius: 15px 15px 0 0;
+  /* Show gradient fade when content overflows */
+  .left-options.has-overflow::after {
+    opacity: 1;
+  }
+  
+  .left-options.has-overflow::before {
+    opacity: 1;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    40% {
+      transform: translateX(-50%) translateY(-4px);
+    }
+    60% {
+      transform: translateX(-50%) translateY(-2px);
+    }
+  }
+  
+  @keyframes fadeOut {
+    to { opacity: 0; }
   }
 }
 
@@ -460,7 +478,7 @@
   }
   
   .left-options {
-    max-height: 30vh;
+    max-height: 28vh;
     padding: 15px;
   }
   
@@ -488,7 +506,7 @@
 }
 
 /* Very small screens */
-@media (max-width: 360px) {
+@media (max-width: 330px) {
   .right-leaderboard {
     /* On very small screens, move stats to top */
     position: fixed;

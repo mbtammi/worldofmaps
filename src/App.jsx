@@ -3,6 +3,7 @@ import './App.css'
 
 // Import our page components (we'll create these next)
 import DailyGame from './components/DailyGame'
+import FreePlayGame from './components/FreePlayGame'
 import Landing from './components/Landing'
 import About from './components/About'
 import HowToPlay from './components/HowToPlay'
@@ -20,6 +21,7 @@ function App() {
         
         {/* Marketing/info pages (will have header/footer) */}
         <Route path="/landing" element={<Landing />} />
+        <Route path="/play" element={<FreePlayGame />} />
         <Route path="/about" element={<About />} />
         <Route path="/how-to-play" element={<HowToPlay />} />
         

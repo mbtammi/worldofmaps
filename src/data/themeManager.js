@@ -50,15 +50,17 @@ export const themeConfigs = {
       // Globe background  
       globeBackground: 'linear-gradient(135deg, #f7fafc 0%, #e2e8f0 50%, #cbd5e0 100%)',
       
-      // Globe imagery (light earth texture)
-      globeImageUrl: null, // We'll set this to a light earth texture
+    // Globe imagery: provide a flat light-blue texture so oceans are visible.
+    // Using an inlined SVG (1024x512) with color #E6F7FF to avoid external fetch & keep it crisp when filtered.
+    globeImageUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512"><rect width="1024" height="512" fill="%23E6F7FF"/></svg>',
       
-      // Globe atmosphere and water color
-      globeAtmosphereColor: '#cbd5e0',
-      globeWaterColor: 'rgba(203, 213, 224, 0.8)', // Light gray water
+    // Globe atmosphere and water background (canvas background around sphere / fallback water tint)
+    globeAtmosphereColor: '#cbd5e0',
+    globeWaterColor: 'rgba(230, 247, 255, 0.95)',
       
       // UI elements
       glassBackground: 'rgba(255, 255, 255, 0.8)',
+  // Slightly stronger border contrast for readability
       glassBorder: 'rgba(0, 0, 0, 0.1)',
       textPrimary: 'rgba(0, 0, 0, 0.9)',
       textSecondary: 'rgba(0, 0, 0, 0.7)',
@@ -87,7 +89,7 @@ export const themeConfigs = {
       
       // Globe atmosphere and water color
       globeAtmosphereColor: '#4a90e2',
-      globeWaterColor: 'rgba(0, 0, 0, 0)', // Transparent to show earth texture
+      globeWaterColor: 'rgba(0, 0, 0, 8)', // Transparent to show earth texture
       
       // UI elements
       glassBackground: 'rgba(255, 255, 255, 0.15)',
