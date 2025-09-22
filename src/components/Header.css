@@ -140,6 +140,7 @@
   .header-nav {
     gap: 1rem;
     width: 100%;
+    justify-content: center;
   }
   
   .nav-links {
