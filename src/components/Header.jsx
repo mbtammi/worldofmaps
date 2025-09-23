@@ -51,10 +51,16 @@ function Header({ theme, onThemeChange }) {
               Play Now
             </button>
             <button
+              onClick={() => handleNavigation('home')}
+              className={`nav-btn ${currentPage === 'home' ? 'nav-btn-active' : ''}`}
+            >
+              Home
+            </button>
+            <button
               onClick={() => handleNavigation('howToPlay')}
               className={`nav-btn ${currentPage === 'how-to-play' ? 'nav-btn-active' : ''}`}
             >
-              How to Play
+              How to
             </button>
             <button
               onClick={() => handleNavigation('about')}
