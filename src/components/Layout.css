@@ -261,6 +261,14 @@
   
   .page-content {
     padding: 2rem 1rem;
+    background: transparent;
+    border: none;
+  }
+
+  .page-content ul {
+    color: #cbd5e0;
+    margin-left: 0;
+    margin-bottom: 2rem;
   }
   
   .page-content h2 {

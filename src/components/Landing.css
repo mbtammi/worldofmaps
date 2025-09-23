@@ -410,6 +410,10 @@
     padding: 10px 20px;
     font-size: 0.9rem;
   }
+  .games-counter {
+    border: none;
+    margin-bottom: 2rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -426,7 +430,7 @@
   }
 
   .footer-links {
-    flex-direction: column;
+    flex-direction: row;
     gap: 15px;
   }
 }
