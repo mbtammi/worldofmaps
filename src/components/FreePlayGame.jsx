@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import GlobeView from './GlobeView'
 import { getAllAvailableDatasets } from '../data/dataSources'
 import { fetchDataset } from '../data/dataFetcher'
@@ -15,11 +15,77 @@ export default function FreePlayGame() {
   const [currentTheme, setCurrentTheme] = useState('dark')
   const [showTooltips, setShowTooltips] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [drawerCollapsed, setDrawerCollapsed] = useState(false)
+  const [showHandlePulse, setShowHandlePulse] = useState(true)
+  const leftOptionsRef = useRef(null)
+  const drawerTouch = useRef({ startY: 0, lastY: 0, dragging: false })
 
   useEffect(() => {
     const theme = initializeTheme()
     setCurrentTheme(theme)
   }, [])
+
+  // Remove handle pulse after a few seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHandlePulse(false), 6000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Drawer gesture handlers (mobile only)
+  useEffect(() => {
+    if (!leftOptionsRef.current) return
+    const el = leftOptionsRef.current
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
+    if (!isMobile) return
+
+    const handleTouchStart = (e) => {
+      const touch = e.touches[0]
+      drawerTouch.current.startY = touch.clientY
+      drawerTouch.current.lastY = touch.clientY
+      drawerTouch.current.dragging = true
+    }
+    const handleTouchMove = (e) => {
+      if (!drawerTouch.current.dragging) return
+      const touch = e.touches[0]
+      drawerTouch.current.lastY = touch.clientY
+    }
+    const handleTouchEnd = () => {
+      if (!drawerTouch.current.dragging) return
+      const delta = drawerTouch.current.lastY - drawerTouch.current.startY
+      // If user swiped down enough, collapse; if swiped up enough, expand
+      if (delta > 40) setDrawerCollapsed(true)
+      else if (delta < -40) setDrawerCollapsed(false)
+      drawerTouch.current.dragging = false
+    }
+    // Attach only to the handle area
+    const handleEl = document.getElementById('drawer-handle-touch-freeplay')
+    if (handleEl) {
+      handleEl.addEventListener('touchstart', handleTouchStart, { passive: true })
+      handleEl.addEventListener('touchmove', handleTouchMove, { passive: true })
+      handleEl.addEventListener('touchend', handleTouchEnd)
+      handleEl.addEventListener('touchcancel', handleTouchEnd)
+    }
+    return () => {
+      if (handleEl) {
+        handleEl.removeEventListener('touchstart', handleTouchStart)
+        handleEl.removeEventListener('touchmove', handleTouchMove)
+        handleEl.removeEventListener('touchend', handleTouchEnd)
+        handleEl.removeEventListener('touchcancel', handleTouchEnd)
+      }
+    }
+  }, [leftOptionsRef, drawerCollapsed])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMenu && !event.target.closest('.menu-container')) {
+        setShowMenu(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
 
   const loadRandomDataset = async () => {
     setLoading(true)
@@ -79,19 +145,79 @@ export default function FreePlayGame() {
           )}
         </div>
       </div>
-      <div className="left-options">
-        {!gameState.isComplete ? (
-          <div className="options-grid">
-            {gameState.availableOptions.map((o,i)=> <button key={i} className="option-btn" onClick={()=>handleGuess(o)}>{o}</button>)}
+      
+      {/* Right Middle - Stats */}
+      <div className="right-leaderboard">
+        <h4>Game Stats</h4>
+        {stats.map((stat, index) => (
+          <div key={index} className="stat-item">
+            <span>{stat.label}:</span>
+            <span>{stat.value}</span>
           </div>
-        ) : (
+        ))}
+        <div className="legend-gradient"></div>
+        <div className="legend-labels">
+          <span>Min</span>
+          <span>Max</span>
+        </div>
+      </div>
+      
+      {/* Left Side - Game Options with mobile drawer */}
+      <div 
+        className={`left-options ${drawerCollapsed ? 'drawer-collapsed' : ''} ${showHandlePulse ? 'drawer-pulse' : ''}`}
+        ref={leftOptionsRef}
+      >
+        {/* Mobile drawer handle */}
+        <button
+          id="drawer-handle-touch-freeplay"
+          type="button"
+          className="drawer-handle"
+          aria-label={drawerCollapsed ? 'Expand options' : 'Collapse options'}
+          onClick={() => setDrawerCollapsed(!drawerCollapsed)}
+        >
+          <div className="drawer-handle-bar" />
+        </button>
+        
+        {!gameState.isComplete && (
+          !drawerCollapsed && (
+            <div className="options-grid">
+              {gameState.availableOptions.map((option, index) => (
+                <button
+                  key={index}
+                  className="option-btn"
+                  onClick={() => handleGuess(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          )
+        )}
+        {gameState.isComplete && (
           <div className="game-results">
             {gameState.isWon ? (
-              <div className="win-message"><h2>🎉 Correct!</h2><p>{gameState.dataset.title}</p></div>
+              <div className="win-message">
+                <h2>🎉 Correct!</h2>
+                <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
+                <p className="fun-fact">{gameState.dataset.funFact}</p>
+              </div>
             ) : (
-              <div className="lose-message"><h2>❌ Not Quite</h2><p>{gameState.dataset.title}</p></div>
+              <div className="lose-message">
+                <h2>😔 Game Over!</h2>
+                <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
+                <p>{gameState.dataset.description}</p>
+              </div>
             )}
-            <button className="play-again-btn" onClick={loadRandomDataset}>Play Another</button>
+            <button className="play-again-btn" onClick={loadRandomDataset}>
+              Play Another
+            </button>
+          </div>
+        )}
+        
+        {/* Previous guesses */}
+        {gameState.guesses.length > 0 && !drawerCollapsed && (
+          <div className="guesses-summary">
+            <p>Guesses: {gameState.guesses.length}</p>
           </div>
         )}
       </div>
