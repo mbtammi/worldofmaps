@@ -62,6 +62,7 @@
 }
 
 .control-btn {
+  padding: 0;
   width: 40px;
   height: 40px;
   background: var(--glassBackground);
@@ -351,6 +352,7 @@
     padding: 10px 20px;
     left: 30%;
     width: 40%;
+    border: 0;
   }
   
   /* Mobile: Stack controls vertically on top-right */
@@ -384,6 +386,80 @@
     -webkit-overflow-scrolling: touch;
     padding-left: 5vw;
     padding-right: 5vw;
+    transition: transform 0.48s cubic-bezier(0.4, 0.0, 0.2, 1), max-height 0.48s ease;
+    will-change: transform;
+    padding-top: 0;
+  }
+
+  /* Collapsed state */
+  .left-options.drawer-collapsed {
+    transform: translateY(calc(100% - 42px)); /* leave grab area visible */
+    max-height: 50vh; /* keep for animation smoothness */
+    overflow: hidden;
+  }
+
+  .drawer-handle {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+    margin: 0 auto 8px auto;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+    border: 0;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .drawer-handle-bar {
+    width: 52px;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--textSecondary);
+    transition: background 0.35s ease, transform 0.48s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.4s ease;
+    position: relative;
+    box-shadow: 0 0 0px rgba(255,255,255,0.0);
+  }
+
+  /* Faint gradient halo behind bar */
+  .drawer-handle-bar::before {
+    content: '';
+    position: absolute;
+    inset: -10px -18px -10px -18px;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 75%);
+    filter: blur(6px);
+    opacity: 0.55;
+    pointer-events: none;
+    border-radius: 40px;
+    transition: opacity 0.55s ease;
+  }
+
+  .drawer-handle:active .drawer-handle-bar,
+  .drawer-handle:focus .drawer-handle-bar {
+    background: rgba(255,255,255,0.6);
+    box-shadow: 0 0 6px rgba(255,255,255,0.45), 0 0 14px rgba(255,255,255,0.25);
+  }
+
+  /* Subtle scale hint when collapsed */
+  .left-options.drawer-collapsed .drawer-handle-bar {
+    transform: scaleX(0.85);
+    box-shadow: 0 0 4px rgba(255,255,255,0.35), 0 0 10px rgba(255,255,255,0.18);
+  }
+  .left-options.drawer-collapsed .drawer-handle-bar::before {
+    opacity: 0.4;
+  }
+
+  /* Gesture hint pulse (only first load) */
+  .drawer-pulse .drawer-handle-bar {
+    animation: pulseHandle 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulseHandle {
+    0%,100% { transform: scaleX(1); opacity: 0.9; }
+    50% { transform: scaleX(0.6); opacity: 0.4; }
   }
   
   /* Mobile: Position stats on right, same height as controls */
@@ -479,7 +555,7 @@
   
   .left-options {
     max-height: 28vh;
-    padding: 15px;
+    padding: 10px 15px 15px;
   }
   
   /* Adjust stats position for smaller screens */

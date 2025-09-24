@@ -19,12 +19,21 @@ function DailyGame() {
   const [alreadyPlayedModal, setAlreadyPlayedModal] = useState(false)
   const [progressLoaded, setProgressLoaded] = useState(false)
   const [globalAvg, setGlobalAvg] = useState(null)
+  const [drawerCollapsed, setDrawerCollapsed] = useState(false)
+  const drawerTouch = useRef({ startY: 0, lastY: 0, dragging: false })
+  const [showHandlePulse, setShowHandlePulse] = useState(true)
 
   // Initialize theme on mount
   useEffect(() => {
     const theme = initializeTheme()
     setCurrentTheme(theme)
   }, [])
+
+  // Remove handle pulse after a few seconds
+  useEffect(()=>{
+    const t = setTimeout(()=> setShowHandlePulse(false), 6000)
+    return ()=> clearTimeout(t)
+  },[])
 
   // Theme switching handler
   const handleThemeSwitch = () => {
@@ -194,6 +203,50 @@ function DailyGame() {
     }
   }
 
+  // Drawer gesture handlers (mobile only)
+  useEffect(()=>{
+    if (!leftOptionsRef.current) return
+    const el = leftOptionsRef.current
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
+    if (!isMobile) return
+
+    const handleTouchStart = (e) => {
+      const touch = e.touches[0]
+      drawerTouch.current.startY = touch.clientY
+      drawerTouch.current.lastY = touch.clientY
+      drawerTouch.current.dragging = true
+    }
+    const handleTouchMove = (e) => {
+      if (!drawerTouch.current.dragging) return
+      const touch = e.touches[0]
+      drawerTouch.current.lastY = touch.clientY
+    }
+    const handleTouchEnd = () => {
+      if (!drawerTouch.current.dragging) return
+      const delta = drawerTouch.current.lastY - drawerTouch.current.startY
+      // If user swiped down enough, collapse; if swiped up enough, expand
+      if (delta > 40) setDrawerCollapsed(true)
+      else if (delta < -40) setDrawerCollapsed(false)
+      drawerTouch.current.dragging = false
+    }
+    // Attach only to the handle area; we'll use a separate element for handle
+    const handleEl = document.getElementById('drawer-handle-touch')
+    if (handleEl) {
+      handleEl.addEventListener('touchstart', handleTouchStart, { passive: true })
+      handleEl.addEventListener('touchmove', handleTouchMove, { passive: true })
+      handleEl.addEventListener('touchend', handleTouchEnd)
+      handleEl.addEventListener('touchcancel', handleTouchEnd)
+    }
+    return ()=>{
+      if (handleEl) {
+        handleEl.removeEventListener('touchstart', handleTouchStart)
+        handleEl.removeEventListener('touchmove', handleTouchMove)
+        handleEl.removeEventListener('touchend', handleTouchEnd)
+        handleEl.removeEventListener('touchcancel', handleTouchEnd)
+      }
+    }
+  },[leftOptionsRef, drawerCollapsed])
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -269,7 +322,7 @@ function DailyGame() {
       
       {/* Top Right - Controls */}
       <div className="top-right-controls">
-        <button className="control-btn" onClick={() => window.location.href = '/landing'}>
+        <button className="control-btn" style={{fontSize: '1.2em', padding: '0'}} onClick={() => window.location.href = '/landing'}>
           ⌂
         </button>
         <button className="control-btn" onClick={handleThemeSwitch}>
@@ -334,7 +387,20 @@ function DailyGame() {
       </div>
       
       {/* Left Side - Game Options */}
-      <div className="left-options" ref={leftOptionsRef}>
+      <div 
+        className={`left-options ${drawerCollapsed ? 'drawer-collapsed' : ''} ${showHandlePulse ? 'drawer-pulse' : ''}`}
+        ref={leftOptionsRef}
+      >
+        {/* Mobile drawer handle */}
+        <button
+          id="drawer-handle-touch"
+            type="button"
+            className="drawer-handle"
+            aria-label={drawerCollapsed ? 'Expand options' : 'Collapse options'}
+            onClick={()=> setDrawerCollapsed(!drawerCollapsed)}
+        >
+          <div className="drawer-handle-bar" />
+        </button>
         {/* Current hint if available */}
         {gameState.currentHint && (
           <div className="hint-display">
@@ -342,20 +408,22 @@ function DailyGame() {
           </div>
         )}
         
-        {!gameState.isComplete ? (
-          <div className="options-grid">
-            {gameState.availableOptions.map((option, index) => (
-              <button
-                key={index}
-                className="option-btn"
-                onClick={() => handleOptionSelect(option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        ) : (
-          // Game completed - show results
+        {!gameState.isComplete && (
+          !drawerCollapsed && (
+            <div className="options-grid">
+              {gameState.availableOptions.map((option, index) => (
+                <button
+                  key={index}
+                  className="option-btn"
+                  onClick={() => handleOptionSelect(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          )
+        )}
+        {gameState.isComplete && (
           <div className="game-results">
             {gameState.isWon ? (
               <div className="win-message">
@@ -377,7 +445,7 @@ function DailyGame() {
         )}
         
         {/* Previous guesses */}
-        {gameState.guesses.length > 0 && (
+        {gameState.guesses.length > 0 && !drawerCollapsed && (
           <div className="guesses-summary">
             <p>Guesses: {gameState.guesses.length}</p>
           </div>
