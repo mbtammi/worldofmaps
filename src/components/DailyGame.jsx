@@ -99,7 +99,7 @@ function DailyGame() {
         }
         
         // Load stats for display
-        const currentStats = getLeaderboardData()
+        const currentStats = getLeaderboardData(dataset)
         setStats(currentStats)
         // Attempt to load cached global avg first (for instant display)
         try {
@@ -171,7 +171,7 @@ function DailyGame() {
       if (newGameState.isComplete) {
         finalizeGame(newGameState)
         markTodayAsPlayed()
-        const updatedStats = getLeaderboardData()
+        const updatedStats = getLeaderboardData(newGameState.dataset)
         setStats(updatedStats)
         // Refresh global average after submission (delayed to allow backend aggregation)
         const dayIndex = newGameState.dataset.challengeInfo?.dayIndex

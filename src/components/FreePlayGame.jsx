@@ -96,7 +96,7 @@ export default function FreePlayGame() {
       const full = await fetchDataset(random.id)
       const gs = createGameState(full)
       setGameState(gs)
-      setStats(getLeaderboardData())
+      setStats(getLeaderboardData(full))
     } catch (e) {
       console.error('FreePlay: failed loading dataset', e)
     } finally {
@@ -112,7 +112,7 @@ export default function FreePlayGame() {
     setGameState(newState)
     if (newState.isComplete) {
       finalizeGame(newState)
-      setStats(getLeaderboardData())
+      setStats(getLeaderboardData(newState.dataset))
     }
   }
 

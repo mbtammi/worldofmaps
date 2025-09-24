@@ -217,19 +217,28 @@ export const resetDailyPlay = () => {
 }
 
 // Get leaderboard-style data for display
-export const getLeaderboardData = () => {
+export const getLeaderboardData = (dataset = null) => {
   const stats = getCalculatedStats()
   
-  // Calculate guess range
-  const minGuesses = Math.min(...Object.entries(stats.gamesWonByGuesses)
-    .filter(([key, count]) => count > 0)
-    .map(([key]) => key === '6+' ? 6 : parseInt(key)))
-  
-  const maxGuesses = Math.max(...Object.entries(stats.gamesWonByGuesses)
-    .filter(([key, count]) => count > 0)
-    .map(([key]) => key === '6+' ? 6 : parseInt(key)))
-    
-  const rangeText = stats.totalWins > 0 ? `${minGuesses}-${maxGuesses}` : '-'
+  // Calculate data range from current dataset if provided
+  let rangeText = '-'
+  if (dataset && dataset.data && dataset.data.length > 0) {
+    const values = dataset.data.map(item => item.value).filter(val => val != null && !isNaN(val))
+    if (values.length > 0) {
+      const minVal = Math.min(...values)
+      const maxVal = Math.max(...values)
+      
+      // Format numbers nicely - show decimals only if needed
+      const formatValue = (val) => {
+        if (val >= 1000000) return `${Math.round(val / 100000) / 10}M`
+        if (val >= 1000) return `${Math.round(val / 100) / 10}K`
+        if (val % 1 === 0) return val.toString()
+        return Math.round(val * 10) / 10
+      }
+      
+      rangeText = `${formatValue(minVal)}-${formatValue(maxVal)}`
+    }
+  }
   
   return [
     // {
