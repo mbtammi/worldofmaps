@@ -22,6 +22,10 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+.drawer-handle {
+  display: none;
+}
+
 /* Game Instructions Header */
 .game-instructions {
   position: fixed;
