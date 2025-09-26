@@ -250,7 +250,7 @@ export const getAllAvailableDatasets = () => {
   return allDatasets
 }
 
-// Get only datasets with authentic data sources available
+// Get only datasets with authentic data sources available 
 export const getAuthenticDatasets = () => {
   const authenticDatasets = []
   
