@@ -32,22 +32,26 @@ export const DATA_SOURCES = {
   }
 }
 
-// Dataset Categories and their potential sources
+// Dataset Categories and their potential sources (Aligned with World Bank Indicators)
 export const DATASET_CATEGORIES = {
   DEMOGRAPHICS: {
     name: 'Demographics & Society',
     icon: '👥',
     datasets: [
       'population-density',
+      'population-total',
+      'population-growth',
+      'urban-population',
+      'population-ages-65',
+      'population-ages-0-14',
       'life-expectancy',
       'birth-rate',
       'death-rate',
-      'urban-population',
-      'literacy-rate',
+      'fertility-rate',
       'infant-mortality',
-      'median-age',
-      'population-growth',
-      'fertility-rate'
+      'literacy-rate',
+      'literacy-rate-youth',
+      'literacy-rate-adult-female'
     ]
   },
   ECONOMY: {
@@ -55,31 +59,32 @@ export const DATASET_CATEGORIES = {
     icon: '💰',
     datasets: [
       'gdp-per-capita',
+      'gdp-total',
       'gdp-growth',
+      'gni-per-capita',
       'unemployment-rate',
       'inflation-rate',
-      'poverty-rate',
-      'gini-coefficient',
+      'exports-goods-services',
+      'imports-goods-services',
       'foreign-investment',
-      'debt-to-gdp',
-      'exports-total',
-      'imports-total'
+      'government-expenditure',
+      'tax-revenue',
+      'gross-savings',
+      'manufacturing-value',
+      'agriculture-value'
     ]
   },
   ENVIRONMENT: {
     name: 'Environment & Climate',
     icon: '🌍',
     datasets: [
-      'co2-emissions',
-      'renewable-energy',
       'forest-coverage',
-      'water-stress',
-      'air-pollution',
-      'temperature-change',
-      'precipitation-annual',
-      'biodiversity-index',
-      'plastic-waste',
-      'energy-consumption'
+      'methane-emissions',
+      'renewable-energy',
+      'energy-consumption',
+      'energy-imports',
+      'fossil-fuel-consumption',
+      'electricity-consumption'
     ]
   },
   TECHNOLOGY: {
@@ -88,14 +93,8 @@ export const DATASET_CATEGORIES = {
     datasets: [
       'internet-users',
       'mobile-subscriptions',
-      'broadband-subscriptions',
-      'rd-expenditure',
-      'patent-applications',
-      'scientific-publications',
-      'high-tech-exports',
-      'digital-government',
-      'cybersecurity-index',
-      'innovation-index'
+      'fixed-broadband',
+      'telephone-lines'
     ]
   },
   HEALTH: {
@@ -105,13 +104,11 @@ export const DATASET_CATEGORIES = {
       'healthcare-expenditure',
       'hospital-beds',
       'physicians-density',
-      'vaccination-coverage',
-      'malnutrition-rate',
-      'obesity-rate',
-      'mental-health-disorders',
-      'disease-burden',
-      'healthcare-access',
-      'pharmaceutical-spending'
+      'nurses-midwives',
+      'immunization-dpt',
+      'immunization-measles',
+      'maternal-mortality',
+      'tuberculosis-incidence'
     ]
   },
   EDUCATION: {
@@ -119,15 +116,21 @@ export const DATASET_CATEGORIES = {
     icon: '🎓',
     datasets: [
       'education-expenditure',
-      'primary-enrollment',
       'secondary-enrollment',
       'tertiary-enrollment',
-      'teacher-ratio',
-      'education-quality-index',
-      'adult-learning',
-      'educational-attainment',
-      'school-completion',
-      'education-gender-parity'
+      'literacy-rate-youth'
+    ]
+  },
+  INFRASTRUCTURE: {
+    name: 'Infrastructure & Transport',
+    icon: '🚧',
+    datasets: [
+      'electricity-access',
+      'water-access',
+      'sanitation-access',
+      'roads-paved',
+      'rail-lines',
+      'air-passengers'
     ]
   },
   CULTURE: {
@@ -135,79 +138,81 @@ export const DATASET_CATEGORIES = {
     icon: '🎭',
     datasets: [
       'coffee-consumption',
-      'alcohol-consumption',
-      'tourism-arrivals',
-      'cultural-sites',
-      'language-diversity',
-      'religious-diversity',
-      'happiness-index',
-      'social-progress-index',
-      'press-freedom',
-      'human-rights-index'
-    ]
-  },
-  GOVERNANCE: {
-    name: 'Governance & Politics',
-    icon: '🏛️',
-    datasets: [
-      'democracy-index',
-      'corruption-index',
-      'government-effectiveness',
-      'rule-of-law',
-      'political-stability',
-      'civil-liberties',
-      'electoral-process',
-      'government-expenditure',
-      'tax-revenue',
-      'public-debt'
-    ]
-  },
-  INFRASTRUCTURE: {
-    name: 'Infrastructure & Transport',
-    icon: '🚧',
-    datasets: [
-      'road-density',
-      'railway-density',
-      'airport-density',
-      'port-infrastructure',
-      'electricity-access',
-      'water-access',
-      'sanitation-access',
-      'logistics-performance',
-      'infrastructure-investment',
-      'transport-emissions'
-    ]
-  },
-  SECURITY: {
-    name: 'Security & Safety',
-    icon: '🛡️',
-    datasets: [
-      'homicide-rate',
-      'peace-index',
-      'terrorism-index',
-      'military-expenditure',
-      'police-per-capita',
-      'prison-population',
-      'road-deaths',
-      'natural-disaster-risk',
-      'food-security',
-      'cyber-security'
+      'alcohol-consumption'
     ]
   }
 }
 
-// World Bank Indicator Mappings
+// World Bank Indicator Mappings (50+ Verified Authentic Datasets)
 export const WORLD_BANK_INDICATORS = {
+  // CURRENT 10 INDICATORS (verified working)
   'population-density': 'EN.POP.DNST',
   'gdp-per-capita': 'NY.GDP.PCAP.CD', 
   'life-expectancy': 'SP.DYN.LE00.IN',
-  // 'co2-emissions': 'EN.ATM.CO2E.PC', // Archived by World Bank
   'internet-users': 'IT.NET.USER.ZS',
   'literacy-rate': 'SE.ADT.LITR.ZS', 
   'unemployment-rate': 'SL.UEM.TOTL.ZS',
   'forest-coverage': 'AG.LND.FRST.ZS',
-  // 'renewable-energy': 'EG.FEC.RNEW.ZS', // Check if this works
-  'urban-population': 'SP.URB.TOTL.IN.ZS'
+  'urban-population': 'SP.URB.TOTL.IN.ZS',
+
+  // DEMOGRAPHIC & POPULATION INDICATORS (8 new)
+  'birth-rate': 'SP.DYN.CBRT.IN',              // Birth rate, crude (per 1,000 people)
+  'death-rate': 'SP.DYN.CDRT.IN',              // Death rate, crude (per 1,000 people)
+  'fertility-rate': 'SP.DYN.TFRT.IN',          // Fertility rate, total (births per woman)
+  'population-growth': 'SP.POP.GROW',          // Population growth (annual %)
+  'infant-mortality': 'SP.DYN.IMRT.IN',        // Mortality rate, infant (per 1,000 live births)
+  'population-total': 'SP.POP.TOTL',           // Population, total
+  'population-ages-65': 'SP.POP.65UP.TO.ZS',  // Population ages 65 and above (% of total)
+  'population-ages-0-14': 'SP.POP.0014.TO.ZS', // Population ages 0-14 (% of total)
+
+  // ECONOMIC INDICATORS (12 new)
+  'inflation-rate': 'FP.CPI.TOTL.ZG',          // Inflation, consumer prices (annual %)
+  'gdp-growth': 'NY.GDP.MKTP.KD.ZG',           // GDP growth (annual %)
+  'gdp-total': 'NY.GDP.MKTP.CD',               // GDP (current US$)
+  'gni-per-capita': 'NY.GNP.PCAP.CD',          // GNI per capita (current US$)
+  'exports-goods-services': 'NE.EXP.GNFS.ZS',  // Exports of goods and services (% of GDP)
+  'imports-goods-services': 'NE.IMP.GNFS.ZS',  // Imports of goods and services (% of GDP)
+  'foreign-investment': 'BX.KLT.DINV.WD.GD.ZS', // Foreign direct investment, net inflows (% of GDP)
+  'government-expenditure': 'GC.XPN.TOTL.GD.ZS', // General government final consumption expenditure (% of GDP)
+  'tax-revenue': 'GC.TAX.TOTL.GD.ZS',          // Tax revenue (% of GDP)
+  'gross-savings': 'NY.GNS.ICTR.ZS',           // Gross domestic savings (% of GDP)
+  'manufacturing-value': 'NV.IND.MANF.ZS',     // Manufacturing, value added (% of GDP)
+  'agriculture-value': 'NV.AGR.TOTL.ZS',       // Agriculture, forestry, and fishing, value added (% of GDP)
+
+  // HEALTH INDICATORS (8 new)
+  'healthcare-expenditure': 'SH.XPD.CHEX.GD.ZS', // Current health expenditure (% of GDP)
+  'hospital-beds': 'SH.MED.BEDS.ZS',           // Hospital beds (per 1,000 people)
+  'physicians-density': 'SH.MED.PHYS.ZS',      // Physicians (per 1,000 people)
+  'nurses-midwives': 'SH.MED.NUMW.P3',         // Nurses and midwives (per 1,000 people)
+  'immunization-dpt': 'SH.IMM.IDPT',           // Immunization, DPT (% of children ages 12-23 months)
+  'immunization-measles': 'SH.IMM.MEAS',       // Immunization, measles (% of children ages 12-23 months)
+  'maternal-mortality': 'SH.STA.MMRT',         // Maternal mortality ratio (per 100,000 live births)
+  'tuberculosis-incidence': 'SH.TBS.INCD',     // Incidence of tuberculosis (per 100,000 people)
+
+  // EDUCATION INDICATORS (4 new) - removed non-working indicators
+  'education-expenditure': 'SE.XPD.TOTL.GD.ZS', // Government expenditure on education, total (% of GDP)
+  'secondary-enrollment': 'SE.SEC.NENR',       // School enrollment, secondary (% net)
+  'tertiary-enrollment': 'SE.TER.ENRR',        // School enrollment, tertiary (% gross)
+  'literacy-rate-youth': 'SE.ADT.1524.LT.ZS',  // Literacy rate, youth total (% of people ages 15-24)
+
+  // INFRASTRUCTURE & TECHNOLOGY (10 new)
+  'electricity-access': 'EG.ELC.ACCS.ZS',      // Access to electricity (% of population)
+  'electricity-consumption': 'EG.USE.ELEC.KH.PC', // Electric power consumption (kWh per capita)
+  'mobile-subscriptions': 'IT.CEL.SETS.P2',    // Mobile cellular subscriptions (per 100 people)
+  'fixed-broadband': 'IT.NET.BBND.P2',         // Fixed broadband subscriptions (per 100 people)
+  'telephone-lines': 'IT.MLT.MAIN.P2',         // Fixed telephone subscriptions (per 100 people)
+  'roads-paved': 'IS.ROD.PAVE.ZS',             // Roads, paved (% of total roads)
+  'rail-lines': 'IS.RRS.TOTL.KM',              // Rail lines (total route-km)
+  'air-passengers': 'IS.AIR.PSGR',             // Air transport, passengers carried
+  'water-access': 'SH.H2O.BASW.ZS',            // People using at least basic drinking water services (% of population)
+  'sanitation-access': 'SH.STA.BASS.ZS',       // People using at least basic sanitation services (% of population)
+
+  // ENERGY & ENVIRONMENT (5 new) - removed problematic CO2 indicator
+  'energy-consumption': 'EG.USE.COMM.KT.OE',   // Energy use (kt of oil equivalent)
+  'renewable-energy': 'EG.FEC.RNEW.ZS',        // Renewable energy consumption (% of total final energy consumption)
+  'methane-emissions': 'EN.ATM.METH.KT.CE',    // Methane emissions (kt of CO2 equivalent)
+  'energy-imports': 'EG.IMP.CONS.ZS',          // Energy imports, net (% of energy use)
+  'fossil-fuel-consumption': 'EG.USE.COMM.FO.ZS' // Fossil fuel energy consumption (% of total)
 }
 
 // Our World in Data Dataset Mappings (Conservative list of known datasets)
