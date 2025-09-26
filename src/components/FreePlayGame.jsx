@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import GlobeView from './GlobeView'
-import { getAllAvailableDatasets } from '../data/dataSources'
+import { getAuthenticDatasets } from '../data/dataSources'
 import { fetchDataset } from '../data/dataFetcher'
 import { createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { getLeaderboardData } from '../data/gameStats'
@@ -90,15 +90,40 @@ export default function FreePlayGame() {
   const loadRandomDataset = async () => {
     setLoading(true)
     try {
-      const all = getAllAvailableDatasets().filter(d => d.id) // basic filter
-      if (!all.length) throw new Error('No datasets available')
-      const random = all[Math.floor(Math.random()*all.length)]
-      const full = await fetchDataset(random.id)
-      const gs = createGameState(full)
-      setGameState(gs)
-      setStats(getLeaderboardData(full))
+      const authenticDatasets = getAuthenticDatasets().filter(d => d.id) // Only use datasets with authentic data
+      if (!authenticDatasets.length) throw new Error('No authentic datasets available')
+      
+      console.log(`🎲 Available authentic datasets: ${authenticDatasets.length}`)
+      
+      // Keep trying random datasets until we find one that works (with fallback limit)
+      let attempts = 0
+      const maxAttempts = 10
+      
+      while (attempts < maxAttempts) {
+        try {
+          const random = authenticDatasets[Math.floor(Math.random() * authenticDatasets.length)]
+          console.log(`🎯 Trying dataset: ${random.id} (attempt ${attempts + 1})`)
+          
+          const full = await fetchDataset(random.id)
+          const gs = createGameState(full)
+          setGameState(gs)
+          setStats(getLeaderboardData(full))
+          console.log(`✅ Successfully loaded dataset: ${random.id}`)
+          return // Success! Exit the function
+          
+        } catch (datasetError) {
+          console.warn(`⚠️ Dataset ${authenticDatasets[Math.floor(Math.random() * authenticDatasets.length)]?.id} failed, trying another...`, datasetError.message)
+          attempts++
+        }
+      }
+      
+      // If we get here, all attempts failed
+      throw new Error(`Failed to load any dataset after ${maxAttempts} attempts`)
+      
     } catch (e) {
       console.error('FreePlay: failed loading dataset', e)
+      // Set a loading error state instead of leaving it stuck
+      setGameState(null)
     } finally {
       setLoading(false)
     }
@@ -123,8 +148,26 @@ export default function FreePlayGame() {
     setShowMenu(false)
   }
 
-  if (loading || !gameState) {
+  if (loading) {
     return <div className="daily-game"><div className="loading"><div className="loading-globe">🌍</div><div>Loading random map...</div></div></div>
+  }
+  
+  if (!gameState) {
+    return (
+      <div className="daily-game">
+        <div className="loading">
+          <div className="loading-globe">⚠️</div>
+          <div>Failed to load dataset</div>
+          <button 
+            className="option-btn" 
+            onClick={loadRandomDataset}
+            style={{ marginTop: '10px' }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

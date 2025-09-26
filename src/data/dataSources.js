@@ -199,14 +199,14 @@ export const DATASET_CATEGORIES = {
 // World Bank Indicator Mappings
 export const WORLD_BANK_INDICATORS = {
   'population-density': 'EN.POP.DNST',
-  'gdp-per-capita': 'NY.GDP.PCAP.CD',
+  'gdp-per-capita': 'NY.GDP.PCAP.CD', 
   'life-expectancy': 'SP.DYN.LE00.IN',
-  'co2-emissions': 'EN.ATM.CO2E.PC',
+  // 'co2-emissions': 'EN.ATM.CO2E.PC', // Archived by World Bank
   'internet-users': 'IT.NET.USER.ZS',
-  'literacy-rate': 'SE.ADT.LITR.ZS',
+  'literacy-rate': 'SE.ADT.LITR.ZS', 
   'unemployment-rate': 'SL.UEM.TOTL.ZS',
   'forest-coverage': 'AG.LND.FRST.ZS',
-  'renewable-energy': 'EG.FEC.RNEW.ZS',
+  // 'renewable-energy': 'EG.FEC.RNEW.ZS', // Check if this works
   'urban-population': 'SP.URB.TOTL.IN.ZS'
 }
 
@@ -245,6 +245,33 @@ export const getAllAvailableDatasets = () => {
   return allDatasets
 }
 
+// Get only datasets with authentic data sources available
+export const getAuthenticDatasets = () => {
+  const authenticDatasets = []
+  
+  Object.values(DATASET_CATEGORIES).forEach(category => {
+    category.datasets.forEach(dataset => {
+      // Only include datasets that have World Bank data, OWID data, or are in our curated static list
+      const hasWorldBank = !!WORLD_BANK_INDICATORS[dataset]
+      const hasOWID = !!OWID_DATASETS[dataset]
+      const hasStaticData = dataset === 'population-density' // Only population-density has curated static data
+      
+      if (hasWorldBank || hasOWID || hasStaticData) {
+        authenticDatasets.push({
+          id: dataset,
+          category: category.name,
+          hasWorldBankData: hasWorldBank,
+          hasOWIDData: hasOWID,
+          hasStaticData: hasStaticData,
+          estimatedAvailability: getDatasetAvailability(dataset)
+        })
+      }
+    })
+  })
+  
+  return authenticDatasets
+}
+
 // Estimate data availability for a dataset
 function getDatasetAvailability(datasetId) {
   // High availability datasets (World Bank, OWID)
@@ -268,5 +295,6 @@ export default {
   DATASET_CATEGORIES,
   WORLD_BANK_INDICATORS,
   OWID_DATASETS,
-  getAllAvailableDatasets
+  getAllAvailableDatasets,
+  getAuthenticDatasets
 }

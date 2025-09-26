@@ -4,6 +4,15 @@
 import { getAllAvailableDatasets } from './dataSources.js'
 import { fetchDataset } from './dataFetcher.js'
 
+// Mock localStorage for Node.js environments
+const storage = typeof localStorage !== 'undefined' ? localStorage : {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  key: () => null,
+  length: 0
+}
+
 // Challenge configuration
 const CHALLENGE_CONFIG = {
   // What time (UTC) should the daily challenge reset?
@@ -159,7 +168,7 @@ export function getUpcomingDatasets(days = 7) {
 // Check if user has played today
 export function hasPlayedToday() {
   const todayIndex = getCurrentDayIndex()
-  const lastPlayedDay = localStorage.getItem('worldofmaps_last_played_day')
+  const lastPlayedDay = storage.getItem('worldofmaps_last_played_day')
   
   return lastPlayedDay && parseInt(lastPlayedDay) === todayIndex
 }
@@ -167,7 +176,7 @@ export function hasPlayedToday() {
 // Mark today as played
 export function markTodayAsPlayed() {
   const todayIndex = getCurrentDayIndex()
-  localStorage.setItem('worldofmaps_last_played_day', todayIndex.toString())
+  storage.setItem('worldofmaps_last_played_day', todayIndex.toString())
 }
 
 // Get dataset by specific date (for testing/admin)
@@ -184,7 +193,7 @@ export async function getDatasetByDate(dateString) {
 export function forceRefreshToday() {
   const todayIndex = getCurrentDayIndex()
   const cacheKey = `worldofmaps_data_daily_${todayIndex}`
-  localStorage.removeItem(cacheKey)
+  storage.removeItem(cacheKey)
   console.log('Forced refresh of today\'s dataset')
 }
 
