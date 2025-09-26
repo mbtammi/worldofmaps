@@ -47,13 +47,14 @@ function seededRandom(seed) {
 
 // Get the current day index (days since epoch, adjusted for reset time)
 export function getCurrentDayIndex() {
+  // Get current time in Helsinki timezone
   const now = new Date()
-  const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000))
+  const helsinkiTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Helsinki"}))
   
-  // Adjust for reset hour
-  const adjustedTime = new Date(utcNow.getTime() - (CHALLENGE_CONFIG.RESET_HOUR_UTC * 60 * 60 * 1000))
+  // Adjust for 7 AM reset
+  const adjustedTime = new Date(helsinkiTime.getTime() - (7 * 60 * 60 * 1000))
   
-  // Calculate days since epoch (Jan 1, 1970)
+  // Calculate days since epoch
   const epochStart = new Date('1970-01-01T00:00:00Z')
   const daysSinceEpoch = Math.floor((adjustedTime.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
   
