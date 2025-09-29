@@ -54,20 +54,19 @@ function seededRandom(seed) {
   }
 }
 
-// Get the current day index (days since epoch, adjusted for reset time)
+// Get the current day index based purely on UTC and the configured RESET_HOUR_UTC.
+// This avoids unreliable string->Date timezone parsing and guarantees the day rolls over
+// exactly at RESET_HOUR_UTC no matter the user's local timezone or DST.
+// Formula: floor( (nowUTC - resetHourUTC)/MS_PER_DAY )
 export function getCurrentDayIndex() {
-  // Get current time in Helsinki timezone
-  const now = new Date()
-  const helsinkiTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Helsinki"}))
-  
-  // Adjust for 7 AM reset
-  const adjustedTime = new Date(helsinkiTime.getTime() - (7 * 60 * 60 * 1000))
-  
-  // Calculate days since epoch
-  const epochStart = new Date('1970-01-01T00:00:00Z')
-  const daysSinceEpoch = Math.floor((adjustedTime.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
-  
-  return daysSinceEpoch % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+  const MS_PER_HOUR = 60 * 60 * 1000
+  const MS_PER_DAY = 24 * MS_PER_HOUR
+  const nowUtcMs = Date.now() // JS Date.now is UTC-based epoch ms
+  const shifted = nowUtcMs - (CHALLENGE_CONFIG.RESET_HOUR_UTC * MS_PER_HOUR)
+  // Use modulo cycle length with positive normalization
+  const rawIndex = Math.floor(shifted / MS_PER_DAY)
+  const cycleIndex = ((rawIndex % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) + CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+  return cycleIndex
 }
 
 // Get the dataset ID for a specific day
@@ -95,27 +94,52 @@ function getDatasetForDay(dayIndex) {
 export async function getTodaysDataset() {
   const todayIndex = getCurrentDayIndex()
   const datasetId = getDatasetForDay(todayIndex)
-  
-  console.log(`Today's challenge (day ${todayIndex}): ${datasetId}`)
-  
+
+  // Daily rollover handling: when the computed day index changes, clear stale per-day progress keys.
   try {
-    const dataset = await fetchDataset(datasetId)
-    
-    // Add challenge metadata
+    const lastIndexRaw = storage.getItem('worldofmaps_last_day_index')
+    const lastIndex = lastIndexRaw != null ? parseInt(lastIndexRaw) : null
+    if (lastIndex !== null && lastIndex !== todayIndex) {
+      // Purge previous daily progress + cached global averages for cleanliness
+      for (let i = 0; i < storage.length; i++) {
+        const k = storage.key(i)
+        if (!k) continue
+        if (k.startsWith('worldofmaps_daily_progress_') || k.startsWith('worldofmaps_global_avg_')) {
+          try { storage.removeItem(k) } catch(_) {}
+        }
+      }
+    }
+    storage.setItem('worldofmaps_last_day_index', todayIndex.toString())
+  } catch (e) {
+    // Non-fatal; continue silently
+  }
+
+  console.log(`Today's challenge (day ${todayIndex}): ${datasetId}`)
+  try {
+    // IMPORTANT: clone dataset to avoid mutating a cached reference reused across days
+    const raw = await fetchDataset(datasetId)
+    const dataset = { ...raw } // shallow clone sufficient (data array not mutated here)
     dataset.challengeInfo = {
       dayIndex: todayIndex,
       challengeDate: new Date().toISOString().split('T')[0],
       nextResetTime: getNextResetTime()
     }
-    
+    // Provide a unique challenge identifier in case the same dataset concept returns on a later day
+    dataset.challengeInfo.challengeId = `${datasetId}-d${todayIndex}`
     return dataset
   } catch (error) {
     console.error('Error fetching today\'s dataset, trying fallback:', error)
-    
-    // Try a fallback dataset
     const fallbackId = CHALLENGE_CONFIG.FALLBACK_DATASETS[todayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
     try {
-      return await fetchDataset(fallbackId)
+      const rawFallback = await fetchDataset(fallbackId)
+      const fb = { ...rawFallback }
+      fb.challengeInfo = {
+        dayIndex: todayIndex,
+        challengeDate: new Date().toISOString().split('T')[0],
+        nextResetTime: getNextResetTime(),
+        challengeId: `${fallbackId}-d${todayIndex}`
+      }
+      return fb
     } catch (fallbackError) {
       console.error('Fallback dataset also failed:', fallbackError)
       throw new Error('Unable to load today\'s challenge. Please try again later.')
