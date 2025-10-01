@@ -172,6 +172,10 @@ function DailyGame() {
   }, [])
 
   const handleOptionSelect = (selectedOption) => {
+    // Any explicit option selection should permanently cancel auto-scroll
+    autoScrollRef.current.userInteracted = true
+    autoScrollRef.current.active = false
+    setShowScrollHint(false)
     if (gameState && !gameState.isComplete) {
       const newGameState = processGuess(gameState, selectedOption)
       setGameState(newGameState)
@@ -522,6 +526,8 @@ function DailyGame() {
       <div 
         className={`left-options ${drawerCollapsed ? 'drawer-collapsed' : ''} ${showHandlePulse ? 'drawer-pulse' : ''}`}
         ref={leftOptionsRef}
+        onMouseDown={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
+        onTouchStart={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
       >
         {/* Mobile drawer handle */}
         <button
@@ -548,6 +554,7 @@ function DailyGame() {
                   key={index}
                   className="option-btn"
                   onClick={() => handleOptionSelect(option)}
+                  onTouchStart={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
                 >
                   {option}
                 </button>
