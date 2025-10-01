@@ -190,7 +190,7 @@ function GlobeView({ dataset, showTooltips = false }) {
       // Set initial camera position
   // Slightly further altitude for less zoomed-in initial view
   // globeEl.current.pointOfView({ altitude: 3.1 })
-  globeEl.current.pointOfView({ altitude: 2.5 })
+  globeEl.current.pointOfView({ altitude: 4.5 })
     }
   }, [])
 
