@@ -109,7 +109,7 @@ async function ensureRequiredCountriesWorldBank(indicator, year, data) {
   return data
 }
 
-// Fetch data from World Bank API
+// Fetch data from World Bank API via proxy to avoid CORS
 export async function fetchWorldBankData(indicator, year = 2022) {
   // Use 2022 as default since 'latest' is not supported by the API
   const actualYear = year === 'latest' ? 2022 : year
@@ -118,63 +118,78 @@ export async function fetchWorldBankData(indicator, year = 2022) {
   if (cached) return cached
 
   try {
-    const url = `${DATA_SOURCES.WORLD_BANK.baseUrl}/country/all/indicator/${indicator}?format=json&per_page=300&date=${actualYear}`
-    const response = await fetch(url)
+    // Check if we're in development mode where Vercel functions don't work
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     
-    if (!response.ok) {
-      throw new Error(`World Bank API error: ${response.status}`)
+    if (!isDevelopment) {
+      // Production mode: use proxy API to avoid CORS
+      console.log(`🌐 Using proxy API for World Bank data: ${indicator}`)
+      const url = `/api/fetchData?source=worldbank&indicator=${indicator}&year=${actualYear}`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        throw new Error(`Proxy API error: ${response.status}`)
+      }
+      
+      const proxyResponse = await response.json()
+      
+      // Check if our proxy API returned an error
+      if (!proxyResponse.success) {
+        throw new Error(proxyResponse.error || 'Proxy API returned error')
+      }
+      
+      // Extract the World Bank data from our proxy response
+      const data = proxyResponse.data
+      if (!Array.isArray(data)) {
+        console.warn('World Bank data array is invalid:', data)
+        throw new Error('Invalid World Bank data format')
+      }
+      
+      const processedData = data
+        .filter(item => {
+          // More robust filtering
+          return item && 
+                 item.value !== null && 
+                 item.value !== undefined && 
+                 item.value !== '' &&
+                 item.country && 
+                 item.country.value &&
+                 item.countryiso3code
+        })
+        .map(item => ({
+          iso_a2: item.countryiso3code?.slice(0, 2) || item.country?.id?.slice(0, 2),
+          iso_a3: item.countryiso3code,
+          name: item.country.value,
+          value: parseFloat(item.value),
+          year: item.date
+        }))
+        .filter(item => {
+          // Final validation
+          return item.iso_a2 && 
+                 item.iso_a3 && 
+                 item.name &&
+                 !isNaN(item.value) &&
+                 item.value > 0 // Remove negative or zero values that might be errors
+        })
+      
+      console.log(`World Bank API returned ${processedData.length} valid countries for ${indicator}`)
+      const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processedData)
+      const missingAfter = getMissingRequiredCountries(augmented)
+      if (missingAfter.length) {
+        console.warn(`World Bank data still missing required countries: ${missingAfter.join(', ')}`)
+      }
+      
+      setCachedData(cacheKey, augmented)
+      return augmented
+    } else {
+      // Development mode: explain why we can't fetch data
+      console.warn(`⚠️ Development mode detected - World Bank API calls not available`)
+      console.warn(`💡 The proxy API (/api/fetchData) only works in production on Vercel`)
+      console.warn(`🔄 Data fetching will work normally when deployed to production`)
+      
+      // Return a descriptive error that explains the issue
+      throw new Error(`World Bank data unavailable in development mode - proxy API requires Vercel deployment`)
     }
-    
-    const jsonData = await response.json()
-    
-    // World Bank returns [metadata, data] array, but sometimes just returns error message
-    if (!jsonData || !Array.isArray(jsonData) || jsonData.length < 2) {
-      console.warn('World Bank API returned unexpected format:', jsonData)
-      throw new Error('Invalid World Bank data format')
-    }
-    
-    const data = jsonData[1]
-    if (!Array.isArray(data)) {
-      console.warn('World Bank data array is invalid:', data)
-      throw new Error('Invalid World Bank data format')
-    }
-    
-    const processedData = data
-      .filter(item => {
-        // More robust filtering
-        return item && 
-               item.value !== null && 
-               item.value !== undefined && 
-               item.value !== '' &&
-               item.country && 
-               item.country.value &&
-               item.countryiso3code
-      })
-      .map(item => ({
-        iso_a2: item.countryiso3code?.slice(0, 2) || item.country?.id?.slice(0, 2),
-        iso_a3: item.countryiso3code,
-        name: item.country.value,
-        value: parseFloat(item.value),
-        year: item.date
-      }))
-      .filter(item => {
-        // Final validation
-        return item.iso_a2 && 
-               item.iso_a3 && 
-               item.name &&
-               !isNaN(item.value) &&
-               item.value > 0 // Remove negative or zero values that might be errors
-      })
-    
-    console.log(`World Bank API returned ${processedData.length} valid countries for ${indicator}`)
-    const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processedData)
-    const missingAfter = getMissingRequiredCountries(augmented)
-    if (missingAfter.length) {
-      console.warn(`World Bank data still missing required countries: ${missingAfter.join(', ')}`)
-    }
-    
-    setCachedData(cacheKey, augmented)
-    return augmented
   } catch (error) {
     console.error('Error fetching World Bank data:', error)
     throw error
@@ -183,52 +198,42 @@ export async function fetchWorldBankData(indicator, year = 2022) {
 
 // Fetch data from Our World in Data
 export async function fetchOWIDData(datasetName) {
-  const cacheKey = `owid_${datasetName}`
-  const cached = getCachedData(cacheKey)
-  if (cached) return cached
-
   try {
-    // OWID datasets often don't exist at expected paths
-    // Let's try multiple potential paths and formats
-    const possiblePaths = [
-      `${DATA_SOURCES.OUR_WORLD_IN_DATA.baseUrl}/${datasetName}/${datasetName}.csv`,
-      `${DATA_SOURCES.OUR_WORLD_IN_DATA.baseUrl}/${datasetName}.csv`,
-      `${DATA_SOURCES.OUR_WORLD_IN_DATA.baseUrl}/${datasetName}/${datasetName}.json`
-    ]
+    console.log(`Fetching OWID data for: ${datasetName}`)
     
-    let csvText = null
-    let successful_url = null
-    
-    // Try each possible path
-    for (const url of possiblePaths) {
-      try {
-        console.log(`Trying OWID URL: ${url}`)
-        const response = await fetch(url)
-        if (response.ok) {
-          csvText = await response.text()
-          successful_url = url
-          console.log(`✓ OWID data found at: ${url}`)
-          break
-        }
-      } catch (pathError) {
-        console.log(`Failed path: ${url}`)
-        continue
-      }
+    const cacheKey = `owid_${datasetName}`
+    const cached = getCachedData(cacheKey)
+    if (cached) {
+      console.log(`Returning cached OWID data for ${datasetName}`)
+      return cached
     }
     
-    if (!csvText) {
-      throw new Error(`OWID dataset not found at any expected path for: ${datasetName}`)
+    // Check if we're in development mode
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')
+    let response;
+    
+    if (isDevelopment) {
+      console.warn(`Development Mode: OWID data fetching via proxy is not available in development mode.`)
+      throw new Error(`Development Mode Limitation: OWID proxy API is only available in production. Local development cannot access OWID data due to CORS restrictions and Vite server limitations.`)
+    } else {
+      // Production mode - use proxy API
+      response = await fetch(`/api/fetchData?source=owid&dataset=${encodeURIComponent(datasetName)}`)
     }
     
-    // Parse CSV data (simple CSV parser)
-    const lines = csvText.split('\n')
+    if (!response.ok) {
+      throw new Error(`OWID HTTP error! status: ${response.status}`)
+    }
+    
+    const csvData = await response.text()
+    const lines = csvData.split('\n').filter(line => line.trim())
+    
     if (lines.length < 2) {
-      throw new Error('Invalid OWID CSV format')
+      throw new Error('Invalid CSV data: not enough rows')
     }
     
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
     const data = []
-    
+      
     // Find relevant columns (Entity, Code, Year, and the data column)
     const entityIndex = headers.findIndex(h => h.toLowerCase().includes('entity'))
     const codeIndex = headers.findIndex(h => h.toLowerCase().includes('code'))
@@ -283,7 +288,7 @@ export async function fetchOWIDData(datasetName) {
       }
     }
     
-    console.log(`OWID processed ${data.length} countries from CSV at ${successful_url}`)
+    console.log(`OWID processed ${data.length} countries from CSV via proxy`)
     const missing = getMissingRequiredCountries(data)
     if (missing.length) {
       console.warn(`OWID dataset ${datasetName} missing required countries: ${missing.join(', ')} (dataset may be rejected if critical).`)
