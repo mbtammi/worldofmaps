@@ -5,6 +5,13 @@
   overflow: hidden;
 }
 
+.globe-gradient-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, #1e4b84 0%, #0d2742 55%, #061624 100%);
+  /* fallback solid color behind WebGL transparency */
+}
+
 .body {
     overflow: hidden;
 }

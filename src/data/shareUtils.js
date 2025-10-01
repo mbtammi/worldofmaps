@@ -111,30 +111,47 @@ export function createPolaroidImage(globeSelector = '#world-globe-canvas', optio
     ctx.fillRect(framePadding/2, framePadding/2, width - framePadding, totalHeight - framePadding)
     ctx.restore()
 
+    // Adjusted image area: widen to reduce side cropping while keeping a slim frame.
+    const imgSideInset = 26 // small inset to keep white frame visible
+    const imgTopInset = 14
+    const imgX = (framePadding/2) + imgSideInset
+    const imgY = (framePadding/2) + imgTopInset
+    const imgW = width - framePadding - imgSideInset * 2
+    const imgH = innerImgHeight - imgTopInset * 2
+
+    // Background behind globe inside polaroid (radial gradient) so transparent areas or letterbox look intentional
+    const grd = ctx.createRadialGradient(
+      imgX + imgW/2, imgY + imgH/2, Math.min(imgW,imgH)*0.15,
+      imgX + imgW/2, imgY + imgH/2, Math.max(imgW,imgH)*0.65
+    )
+    grd.addColorStop(0,'#103155')
+    grd.addColorStop(0.55,'#0b223b')
+    grd.addColorStop(1,'#071523')
+    ctx.fillStyle = grd
+    ctx.fillRect(imgX, imgY, imgW, imgH)
+
     if (globeDataUrl) {
       const img = new Image()
       img.src = globeDataUrl
       await new Promise(res => { img.onload = res; img.onerror = res })
-      const imgX = framePadding + 10
-      const imgY = framePadding + 10
-      const imgW = width - (framePadding*2) - 20
-      const imgH = innerImgHeight - 20
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(imgX, imgY, imgW, imgH)
-      try { ctx.drawImage(img, imgX, imgY, imgW, imgH) } catch(_) {}
-      const grad = ctx.createLinearGradient(0, imgY + imgH*0.55, 0, imgY + imgH)
-      grad.addColorStop(0,'rgba(0,0,0,0)')
-      grad.addColorStop(1,'rgba(0,0,0,0.35)')
-      ctx.fillStyle = grad
-      ctx.fillRect(imgX, imgY, imgW, imgH)
+      // Contain-fit the captured globe so sphere edges are not horizontally cropped
+      try {
+        const scale = Math.min(imgW / img.width, imgH / img.height)
+        const drawW = img.width * scale
+        const drawH = img.height * scale
+        const dx = imgX + (imgW - drawW)/2
+        const dy = imgY + (imgH - drawH)/2
+        ctx.drawImage(img, dx, dy, drawW, drawH)
+      } catch(_) {}
+      // Removed previous bottom shadow gradient overlay per request.
     } else {
       // Placeholder if globe capture failed
-      ctx.fillStyle = '#ddd'
-      ctx.fillRect(framePadding + 10, framePadding + 10, width - (framePadding*2) - 20, innerImgHeight - 20)
-      ctx.fillStyle = '#666'
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'
+      ctx.fillRect(imgX, imgY, imgW, imgH)
+      ctx.fillStyle = '#8892a0'
       ctx.font = '500 42px Inter, Arial'
       ctx.textAlign = 'center'
-      ctx.fillText('Globe unavailable', width/2, framePadding + innerImgHeight/2)
+      ctx.fillText('Globe unavailable', width/2, imgY + imgH/2)
     }
 
   const dayText = options.dayIndex != null ? `Day #${options.dayIndex}` : 'World Data'
@@ -162,24 +179,24 @@ export function createPolaroidImage(globeSelector = '#world-globe-canvas', optio
 // 9:16 Story-oriented share image (e.g., 1080x1920). Omits dataset title to avoid spoiling.
 // options: { dayIndex, isWon, guessCount, site }
 export async function createStoryShareImage(globeSelector = '#world-globe-canvas', options = {}) {
-  // Compact branded card: ~70% image, 30% caption.
+  // Blue themed variant; slightly larger outer padding; ~68% image, captions lowered.
   const W = 1080, H = 1920
   const canvas = document.createElement('canvas')
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
 
-  // Gradient background
+  // Blue -> deep navy gradient background
   const bg = ctx.createLinearGradient(0,0,W,H)
-  bg.addColorStop(0,'#211a3f')
-  bg.addColorStop(0.5,'#372b66')
-  bg.addColorStop(1,'#4d3890')
+  bg.addColorStop(0,'#1b4f8f')
+  bg.addColorStop(0.45,'#0f335d')
+  bg.addColorStop(1,'#071a30')
   ctx.fillStyle = bg
   ctx.fillRect(0,0,W,H)
 
-  const cardPad = 48
+  const cardPad = 70 // increased from 48 for more edge breathing room
   const cardRadius = 44
-  const cardTop = 70
-  const cardBottom = H - 70
+  const cardTop = 90
+  const cardBottom = H - 90
   const cardHeight = cardBottom - cardTop
   const cardWidth = W - cardPad*2
 
@@ -191,8 +208,8 @@ export async function createStoryShareImage(globeSelector = '#world-globe-canvas
   ctx.beginPath(); ctx.roundRect(cardPad, cardTop, cardWidth, cardHeight, cardRadius); ctx.fillStyle = '#fcfcfb'; ctx.fill();
   ctx.restore()
 
-  // Image area ~70%
-  const imgAreaHeight = Math.round(cardHeight * 0.7)
+  // Image area ~68% of card height (slightly less to push text lower)
+  const imgAreaHeight = Math.round(cardHeight * 0.68)
   const imgX = cardPad + 40
   const imgY = cardTop + 40
   const imgW = cardWidth - 80
@@ -228,7 +245,7 @@ export async function createStoryShareImage(globeSelector = '#world-globe-canvas
   ctx.restore()
 
   // Caption area
-  const captionTop = imgY + imgH + 56
+  const captionTop = imgY + imgH + 110 // move captions lower
   const dayText = options.dayIndex != null ? `Day #${options.dayIndex}` : 'World Data'
   ctx.font='800 120px Inter, Arial, sans-serif'; ctx.textAlign='center'
   const m = ctx.measureText(dayText)
@@ -239,11 +256,11 @@ export async function createStoryShareImage(globeSelector = '#world-globe-canvas
   const guessWord = options.guessCount === 1 ? 'guess' : 'guesses'
   const resultLine = options.isWon ? `Solved in ${options.guessCount} ${guessWord}` : `Tried ${options.guessCount} ${guessWord}`
   ctx.font='600 60px Inter, Arial, sans-serif'; ctx.fillStyle='#1f2030'
-  ctx.fillText(resultLine, W/2, captionTop + 120)
+  ctx.fillText(resultLine, W/2, captionTop + 140)
 
   const site = options.site || 'worldofthemaps.com'
   ctx.font='400 54px Inter, Arial, sans-serif'; ctx.fillStyle='#555'
-  ctx.fillText(site, W/2, cardTop + cardHeight - 90)
+  ctx.fillText(site, W/2, cardTop + cardHeight - 70)
 
   // Slim vignette
   const vg = ctx.createRadialGradient(W/2,H/2,W*0.35,W/2,H/2,W*0.85)

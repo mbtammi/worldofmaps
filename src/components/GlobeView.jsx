@@ -188,7 +188,9 @@ function GlobeView({ dataset, showTooltips = false }) {
       globeEl.current.controls().dampingFactor = 0.1
       
       // Set initial camera position
-      globeEl.current.pointOfView({ altitude: 2.5 })
+  // Slightly further altitude for less zoomed-in initial view
+  // globeEl.current.pointOfView({ altitude: 3.1 })
+  globeEl.current.pointOfView({ altitude: 2.5 })
     }
   }, [])
 
@@ -215,7 +217,7 @@ function GlobeView({ dataset, showTooltips = false }) {
   }, [themeUpdateTrigger, countries.length])
 
   return (
-    <div className="globe-view-container">
+    <div className="globe-view-container globe-gradient-bg">
       {isLoading && (
         <div className="globe-loading">
           <div className="globe-spinner"></div>
