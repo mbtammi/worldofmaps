@@ -56,10 +56,10 @@ export const themeConfigs = {
       
     // Globe atmosphere and water background (canvas background around sphere / fallback water tint)
     globeAtmosphereColor: '#cbd5e0',
-    globeWaterColor: 'rgba(230, 247, 255, 0.95)',
+    globeWaterColor: 'rgba(183, 231, 253, 0.95)',
       
       // UI elements
-      glassBackground: 'rgba(255, 255, 255, 0.8)',
+      glassBackground: 'rgba(211, 245, 255, 0.8)',
   // Slightly stronger border contrast for readability
       glassBorder: 'rgba(0, 0, 0, 0.1)',
       textPrimary: 'rgba(0, 0, 0, 0.9)',
@@ -73,7 +73,7 @@ export const themeConfigs = {
       // Data visualization (pastel green to pastel red)
       dataColorStart: 'rgb(144, 238, 144)',   // Light green
       dataColorEnd: 'rgb(255, 182, 193)',     // Light pink
-      noDataColor: '#ffffff' // White for countries without data
+      noDataColor: '#e9e9e9f6' // White for countries without data
     }
   },
   
