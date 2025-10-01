@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame, toggleHints } from '../data/gameManager'
 import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
@@ -6,8 +6,10 @@ import { getLeaderboardData } from '../data/gameStats'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
-import ShareSheet from './ShareSheet'
 import './DailyGame.css'
+
+// Lazy load ShareSheet to improve initial page load performance
+const ShareSheet = lazy(() => import('./ShareSheet'))
 
 function DailyGame() {
   const [gameState, setGameState] = useState(null)
@@ -16,6 +18,7 @@ function DailyGame() {
   const [showInstructions, setShowInstructions] = useState(true)
   const [stats, setStats] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [currentTheme, setCurrentTheme] = useState('dark')
   const leftOptionsRef = useRef(null)
   const [alreadyPlayedModal, setAlreadyPlayedModal] = useState(false)
@@ -63,10 +66,10 @@ function DailyGame() {
     const initializeGame = async () => {
       try {
         setLoading(true)
-        console.log('DailyGame: Initializing game...')
+        // Dev log removed - prevents answer spoilers in production
         
         const dataset = await getTodaysDataset()
-        console.log('DailyGame: Dataset loaded:', dataset.title)
+        // Dev log removed - prevents revealing dataset title in production
         
         const initialGameState = createGameState(dataset)
 
@@ -109,8 +112,7 @@ function DailyGame() {
         console.log('DailyGame: Game initialized successfully')
       } catch (error) {
         console.error('DailyGame: Failed to initialize game:', error)
-        // TODO: Show error message to user
-        // For now, we'll just keep loading state showing
+        setLoadError(error.message || 'Failed to load today\'s challenge. Please try again.')
       } finally {
         setLoading(false)
       }
@@ -416,6 +418,26 @@ function DailyGame() {
     }
   }, [])
 
+  // Show error if game failed to load
+  if (loadError) {
+    return (
+      <div className="daily-game">
+        <div className="loading">
+          <div className="loading-globe">❌</div>
+          <div>Unable to load today's challenge</div>
+          <div className="loading-subtitle">{loadError}</div>
+          <button 
+            className="play-again-btn" 
+            style={{marginTop: '20px'}}
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // Show loading if game state isn't ready
   if (loading || !gameState || !progressLoaded) {
     return (
@@ -610,19 +632,21 @@ function DailyGame() {
         )}
       </div>
     {shareSheetOpen && gameState?.isComplete && (
-      <ShareSheet
-        open={shareSheetOpen}
-        onClose={()=> setShareSheetOpen(false)}
-        result={{
-          isWon: gameState.isWon,
-          guesses: gameState.guesses,
-          guessCount: gameState.guesses.length,
-          datasetTitle: gameState.dataset.title,
-          dayIndex: gameState.dataset.challengeInfo?.dayIndex,
-          challengeId: gameState.dataset.challengeInfo?.challengeId,
-          durationMs: Date.now() - gameState.startTime
-        }}
-      />
+      <Suspense fallback={<div style={{position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', color: 'white'}}>Loading share options...</div>}>
+        <ShareSheet
+          open={shareSheetOpen}
+          onClose={()=> setShareSheetOpen(false)}
+          result={{
+            isWon: gameState.isWon,
+            guesses: gameState.guesses,
+            guessCount: gameState.guesses.length,
+            datasetTitle: gameState.dataset.title,
+            dayIndex: gameState.dataset.challengeInfo?.dayIndex,
+            challengeId: gameState.dataset.challengeInfo?.challengeId,
+            durationMs: Date.now() - gameState.startTime
+          }}
+        />
+      </Suspense>
     )}
     </div>
   )

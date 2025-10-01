@@ -39,12 +39,24 @@ This project is a fun, game-first geography/data puzzle app. It must feel simple
 
 ## Development Goals
 1. Ship a playable MVP with:
-   - One hardcoded dataset
+   - NO hardcoded datasets
    - Guessing input
    - Win/lose reveal
 2. Expand to multiple datasets
 3. Add streaks + share results
 4. Polish map styling for a clean, shareable experience
+
+# View schedule
+npm run schedule          # Next 7 days
+npm run schedule:past     # Last 7 days  
+npm run schedule:month    # Next 30 days
+
+# Verify system
+npm run verify:rotation   # Check everything works
+
+# Custom views
+npm run schedule 90       # Next 90 days
+npm run schedule -- -14   # Last 14 days
 
 ## Style & Best Practices
 - Keep code **readable and modular**.

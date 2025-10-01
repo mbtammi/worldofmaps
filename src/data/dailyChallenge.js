@@ -3,6 +3,7 @@
 
 import { getAllAvailableDatasets } from './dataSources.js'
 import { fetchDataset } from './dataFetcher.js'
+import { devLog, warnLog, errorLog } from '../utils/logger.js'
 
 // Mock localStorage for Node.js environments
 const storage = typeof localStorage !== 'undefined' ? localStorage : {
@@ -40,7 +41,7 @@ const CHALLENGE_CONFIG = {
   ]
 }
 
-// Simple seeded random number generator
+// Simple seeded random number generator (Linear Congruential Generator)
 function seededRandom(seed) {
   let hash = 0
   for (let i = 0; i < seed.length; i++) {
@@ -53,6 +54,19 @@ function seededRandom(seed) {
     hash = ((hash * 1103515245) + 12345) & 0x7fffffff
     return hash / 0x7fffffff
   }
+}
+
+// Shuffle array using seeded random (Fisher-Yates shuffle)
+function seededShuffle(array, seed) {
+  const shuffled = [...array]
+  const rng = seededRandom(seed)
+  
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  
+  return shuffled
 }
 
 // Get the current day index based purely on UTC and the configured RESET_HOUR_UTC.
@@ -71,6 +85,7 @@ export function getCurrentDayIndex() {
 }
 
 // Get the dataset ID for a specific day
+// Uses a shuffled rotation system to ensure no duplicates within pool size
 function getDatasetForDay(dayIndex) {
   const availableDatasets = getAllAvailableDatasets()
   
@@ -80,15 +95,27 @@ function getDatasetForDay(dayIndex) {
   )
   
   if (suitableDatasets.length === 0) {
-    console.warn('No suitable datasets found, using fallback')
+    warnLog('No suitable datasets found, using fallback')
     return CHALLENGE_CONFIG.FALLBACK_DATASETS[dayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
   }
   
-  // Use seeded randomization for reproducible but seemingly random selection
-  const rng = seededRandom(CHALLENGE_CONFIG.RANDOM_SEED + dayIndex)
-  const randomIndex = Math.floor(rng() * suitableDatasets.length)
+  const poolSize = suitableDatasets.length
   
-  return suitableDatasets[randomIndex].id
+  // Determine which "cycle" we're in (each cycle = poolSize days)
+  const cycleNumber = Math.floor(dayIndex / poolSize)
+  const positionInCycle = dayIndex % poolSize
+  
+  // Create a deterministic shuffle for this cycle
+  // Different cycle numbers produce different shuffles
+  const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
+  const shuffledDatasets = seededShuffle(suitableDatasets, shuffleSeed)
+  
+  // Pick the dataset at this position in the shuffled cycle
+  const selectedDataset = shuffledDatasets[positionInCycle]
+  
+  devLog(`Day ${dayIndex}: cycle ${cycleNumber}, position ${positionInCycle}/${poolSize}, dataset: ${selectedDataset.id}`)
+  
+  return selectedDataset.id
 }
 
 // Get today's dataset
@@ -115,7 +142,7 @@ export async function getTodaysDataset() {
     // Non-fatal; continue silently
   }
 
-  console.log(`Today's challenge (day ${todayIndex}): primary '${datasetId}'`)
+  devLog(`Today's challenge (day ${todayIndex}): primary '${datasetId}'`)
 
   const attemptIds = []
   const tried = new Set()
@@ -133,8 +160,9 @@ export async function getTodaysDataset() {
     if (tried.has(id)) continue
     tried.add(id)
     try {
-      console.log(`Attempting dataset '${id}' (order position ${attemptIds.length + 1}/${ordered.length})`)
-      const raw = await fetchDataset(id)
+      devLog(`Attempting dataset '${id}' (order position ${attemptIds.length + 1}/${ordered.length})`)
+      // Pass dayIndex to fetchDataset for deterministic option generation
+      const raw = await fetchDataset(id, todayIndex)
       const ds = { ...raw }
       ds.challengeInfo = {
         dayIndex: todayIndex,
@@ -144,16 +172,16 @@ export async function getTodaysDataset() {
         attemptedOrder: ordered,
         primaryId: datasetId
       }
-      console.log(`Selected dataset '${id}' for day ${todayIndex} (primary was '${datasetId}', attempts: ${attemptIds.length + 1})`)
+      devLog(`Selected dataset '${id}' for day ${todayIndex} (primary was '${datasetId}', attempts: ${attemptIds.length + 1})`)
       return ds
     } catch (e) {
       lastError = e
       attemptIds.push(`${id}: ${e.message}`)
-      console.warn(`Dataset '${id}' failed (${e.message}). Trying next fallback...`)
+      warnLog(`Dataset '${id}' failed (${e.message}). Trying next fallback...`)
     }
   }
 
-  console.error(`All dataset attempts failed for day ${todayIndex}:`, attemptIds)
+  errorLog(`All dataset attempts failed for day ${todayIndex}:`, attemptIds)
   throw new Error('Unable to load today\'s challenge. Please try again later.')
 }
 
@@ -231,6 +259,56 @@ export function forceRefreshToday() {
   console.log('Forced refresh of today\'s dataset')
 }
 
+// Get dataset history - which datasets have been used in a date range
+export function getDatasetHistory(startDayIndex, endDayIndex) {
+  const history = []
+  const seenDatasets = new Set()
+  
+  for (let i = startDayIndex; i <= endDayIndex; i++) {
+    const datasetId = getDatasetForDay(i)
+    const date = new Date()
+    date.setDate(date.getDate() + (i - getCurrentDayIndex()))
+    
+    history.push({
+      dayIndex: i,
+      date: date.toISOString().split('T')[0],
+      datasetId,
+      isFirstOccurrence: !seenDatasets.has(datasetId)
+    })
+    
+    seenDatasets.add(datasetId)
+  }
+  
+  return {
+    history,
+    uniqueDatasetsUsed: seenDatasets.size,
+    totalDays: endDayIndex - startDayIndex + 1
+  }
+}
+
+// Get statistics about dataset rotation
+export function getRotationStats() {
+  const availableDatasets = getAllAvailableDatasets()
+  const suitableDatasets = availableDatasets.filter(dataset => 
+    dataset.estimatedAvailability === 'high' || dataset.estimatedAvailability === 'medium'
+  )
+  
+  const poolSize = suitableDatasets.length
+  const currentDay = getCurrentDayIndex()
+  const currentCycle = Math.floor(currentDay / poolSize)
+  const positionInCycle = currentDay % poolSize
+  const daysUntilNewCycle = poolSize - positionInCycle
+  
+  return {
+    totalAvailableDatasets: poolSize,
+    currentCycle: currentCycle,
+    positionInCycle: positionInCycle,
+    daysUntilNewCycle: daysUntilNewCycle,
+    guaranteedUniqueDays: poolSize,
+    datasetList: suitableDatasets.map(d => d.id)
+  }
+}
+
 export default {
   getTodaysDataset,
   getCurrentDayIndex,
@@ -239,5 +317,7 @@ export default {
   hasPlayedToday,
   markTodayAsPlayed,
   getDatasetByDate,
-  forceRefreshToday
+  forceRefreshToday,
+  getDatasetHistory,
+  getRotationStats
 }

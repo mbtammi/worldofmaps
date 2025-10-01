@@ -8,7 +8,11 @@
     "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "schedule": "node scripts/view-dataset-schedule.js",
+    "schedule:past": "node scripts/view-dataset-schedule.js -7",
+    "schedule:month": "node scripts/view-dataset-schedule.js 30",
+    "verify:rotation": "node scripts/verify-rotation.js"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -28,6 +32,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
+    "terser": "^5.44.0",
     "vite": "^7.1.6"
   }
 }

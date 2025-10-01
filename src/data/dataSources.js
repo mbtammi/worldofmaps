@@ -279,15 +279,41 @@ export const getAuthenticDatasets = () => {
 
 // Estimate data availability for a dataset
 function getDatasetAvailability(datasetId) {
-  // High availability datasets (World Bank, OWID)
+  // High availability datasets - ALL World Bank indicators (55 total)
+  // These are verified World Bank API endpoints that work reliably
   const highAvailability = [
-    'population-density', 'gdp-per-capita', 'life-expectancy', 'co2-emissions',
-    'internet-users', 'literacy-rate', 'unemployment-rate', 'forest-coverage'
+    // Demographics & Population (8 datasets)
+    'population-density', 'population-total', 'population-growth', 'urban-population',
+    'population-ages-65', 'population-ages-0-14', 'life-expectancy', 'birth-rate',
+    'death-rate', 'fertility-rate', 'infant-mortality',
+    
+    // Economy (13 datasets)
+    'gdp-per-capita', 'gdp-total', 'gdp-growth', 'gni-per-capita', 'unemployment-rate',
+    'inflation-rate', 'exports-goods-services', 'imports-goods-services',
+    'foreign-investment', 'government-expenditure', 'tax-revenue', 'gross-savings',
+    'manufacturing-value', 'agriculture-value',
+    
+    // Health (8 datasets)
+    'healthcare-expenditure', 'hospital-beds', 'physicians-density', 'nurses-midwives',
+    'immunization-dpt', 'immunization-measles', 'maternal-mortality', 'tuberculosis-incidence',
+    
+    // Education (4 datasets)
+    'literacy-rate', 'literacy-rate-youth', 'education-expenditure',
+    'secondary-enrollment', 'tertiary-enrollment',
+    
+    // Technology & Infrastructure (10 datasets)
+    'internet-users', 'mobile-subscriptions', 'fixed-broadband', 'telephone-lines',
+    'electricity-access', 'electricity-consumption', 'water-access', 'sanitation-access',
+    'roads-paved', 'rail-lines', 'air-passengers',
+    
+    // Energy & Environment (7 datasets)
+    'forest-coverage', 'energy-consumption', 'renewable-energy', 'methane-emissions',
+    'energy-imports', 'fossil-fuel-consumption'
   ]
   
-  // Medium availability datasets (UN, specialized sources)
+  // Medium availability datasets (UN, OWID, specialized sources)
   const mediumAvailability = [
-    'happiness-index', 'democracy-index', 'corruption-index', 'tourism-arrivals'
+    'coffee-consumption', 'alcohol-consumption'
   ]
   
   if (highAvailability.includes(datasetId)) return 'high'

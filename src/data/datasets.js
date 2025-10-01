@@ -13,7 +13,7 @@ const STATIC_DATASETS = {
 // Get today's dataset (dynamic system with fallback)
 export const getDailyDataset = async () => {
   try {
-    console.log('Attempting to fetch dynamic daily dataset...')
+    // Dev log removed to prevent revealing daily challenge in production
     return await getDynamicTodaysDataset()
   } catch (error) {
     console.error('Dynamic dataset fetch failed, using static fallback:', error)
@@ -31,7 +31,7 @@ export const getDailyDataset = async () => {
 // Get dataset by type (with dynamic fetching)
 export const getDatasetByType = async (datasetType) => {
   try {
-    console.log(`Fetching dataset by type: ${datasetType}`)
+    // Dev log removed to prevent revealing dataset type in production
     return await fetchDataset(datasetType)
   } catch (error) {
     console.error(`Failed to fetch dynamic dataset ${datasetType}, using static fallback:`, error)

@@ -150,7 +150,7 @@ function GlobeView({ dataset, showTooltips = false }) {
           }
         })
         
-        console.log('Globe loaded with', enrichedCountries.length, 'countries')
+        // Dev log removed to prevent revealing data in production
         setCountries(enrichedCountries)
         setIsLoading(false)
       })
@@ -261,16 +261,14 @@ function GlobeView({ dataset, showTooltips = false }) {
         
         // Interaction
         onGlobeReady={() => {
-          console.log('Globe loaded with', countries.length, 'countries')
+          // Dev log removed to prevent revealing data in production
           setIsLoading(false)
           // Ensure canvas id after ready
           try {
             const renderer = globeEl.current?.renderer?.()
             const domEl = renderer?.domElement
             if (domEl && !domEl.id) domEl.id = 'world-globe-canvas'
-            if (domEl) {
-              console.log('[GlobeView] Canvas ready for capture', domEl.width, 'x', domEl.height, 'preserveDrawingBuffer=', renderer?.getContext()?.getContextAttributes()?.preserveDrawingBuffer)
-            }
+            // Dev log removed - canvas capture info only needed in dev
           } catch(_) {}
         }}
       />

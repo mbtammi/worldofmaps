@@ -4,6 +4,7 @@
 import { DATA_SOURCES, WORLD_BANK_INDICATORS, OWID_DATASETS } from './dataSources.js'
 import { getCurrentDayIndex } from './dailyChallenge.js'
 import { populationDensityDataset } from './populationDensity.js'
+import { devLog, warnLog, errorLog } from '../utils/logger.js'
 
 // Cache configuration
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds (for authentic API data)
@@ -39,7 +40,7 @@ function getCachedData(key) {
     
     return data
   } catch (error) {
-    console.warn('Error reading cached data:', error)
+    warnLog('Error reading cached data:', error)
     return null
   }
 }
@@ -53,7 +54,7 @@ function setCachedData(key, data) {
     }
     storage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(cacheEntry))
   } catch (error) {
-    console.warn('Error caching data:', error)
+    warnLog('Error caching data:', error)
   }
 }
 
@@ -327,8 +328,23 @@ function getISOCodeFromName(countryName) {
   return countryMapping[countryName] || null
 }
 
+// Simple seeded random number generator for consistent daily options
+function seededRandom(seed) {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  
+  return function() {
+    hash = ((hash * 1103515245) + 12345) & 0x7fffffff
+    return hash / 0x7fffffff
+  }
+}
+
 // Generate dataset metadata
-export function generateDatasetMetadata(datasetId, data, source) {
+export function generateDatasetMetadata(datasetId, data, source, dayIndex = null) {
   const metadataTemplates = {
     'population-density': {
       title: 'Population Density',
@@ -380,8 +396,8 @@ export function generateDatasetMetadata(datasetId, data, source) {
     funFact: `Interesting facts about ${datasetId.replace(/-/g, ' ')} around the world.`
   }
   
-  // Generate multiple choice options
-  const baseOptions = [
+  // Expanded pool of possible options for better variety
+  const allPossibleOptions = [
     'Coffee Consumption',
     'Internet Usage', 
     'GDP per Capita',
@@ -396,31 +412,59 @@ export function generateDatasetMetadata(datasetId, data, source) {
     'Education Spending',
     'Healthcare Quality',
     'Innovation Index',
-    'Press Freedom'
+    'Press Freedom',
+    'Water Access',
+    'Electricity Usage',
+    'Tourism Revenue',
+    'Military Spending',
+    'Research Investment',
+    'Digital Connectivity',
+    'Urban Growth Rate',
+    'Agricultural Output',
+    'Trade Balance',
+    'Energy Efficiency',
+    'Air Quality Index',
+    'Public Transit Usage',
+    'Patent Applications',
+    'Food Security',
+    'Housing Affordability'
   ]
   
-  // Add the correct answer and shuffle to randomize position
-  const allOptions = [template.title, ...baseOptions]
-  const uniqueOptions = [...new Set(allOptions)]
+  // Remove the correct answer from the pool to avoid duplicates
+  const optionsPool = allPossibleOptions.filter(opt => opt !== template.title)
   
-  // Fisher-Yates shuffle algorithm for true randomization
-  for (let i = uniqueOptions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [uniqueOptions[i], uniqueOptions[j]] = [uniqueOptions[j], uniqueOptions[i]]
+  // Use seeded random if dayIndex provided (for daily consistent options)
+  // Otherwise use Math.random for truly random free play
+  let rng
+  if (dayIndex !== null && dayIndex !== undefined) {
+    // Deterministic shuffle based on day + datasetId
+    const seed = `worldofmaps-options-${datasetId}-${dayIndex}`
+    rng = seededRandom(seed)
+  } else {
+    rng = Math.random
   }
   
-  // Take first 10 options after shuffle
-  const finalOptions = uniqueOptions.slice(0, 10)
+  // Fisher-Yates shuffle with seeded or true random
+  const shuffledPool = [...optionsPool]
+  for (let i = shuffledPool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffledPool[i], shuffledPool[j]] = [shuffledPool[j], shuffledPool[i]]
+  }
   
-  // Ensure correct answer is included (in case it got shuffled out)
-  if (!finalOptions.includes(template.title)) {
-    finalOptions[Math.floor(Math.random() * finalOptions.length)] = template.title
+  // Take 9 wrong options + 1 correct answer = 10 total
+  const wrongOptions = shuffledPool.slice(0, 9)
+  const allOptions = [template.title, ...wrongOptions]
+  
+  // Shuffle the final 10 options to randomize correct answer position
+  for (let i = allOptions.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]]
   }
   
   return {
     id: `${datasetId}-${new Date().getFullYear()}`,
     ...template,
-    options: finalOptions,
+    options: allOptions,
     data: data,
     source: source,
     year: new Date().getFullYear()
@@ -428,17 +472,17 @@ export function generateDatasetMetadata(datasetId, data, source) {
 }
 
 // Main function to fetch any dataset
-export async function fetchDataset(datasetId) {
+export async function fetchDataset(datasetId, dayIndex = null) {
   // First check if we have a cached version of this complete dataset
   const cacheKey = `dataset_${datasetId}`
   const cached = getCachedData(cacheKey)
   if (cached) {
-    console.log(`✅ Using cached dataset: ${datasetId}`)
+    devLog(`✅ Using cached dataset: ${datasetId}`)
     return cached
   }
 
   try {
-    console.log(`🔄 Fetching dataset: ${datasetId}`)
+    devLog(`🔄 Fetching dataset: ${datasetId}`)
     
     let data = null
     let source = DATA_SOURCES.STATIC_BACKUP.attribution
@@ -447,11 +491,11 @@ export async function fetchDataset(datasetId) {
     // Try World Bank first if available
     if (WORLD_BANK_INDICATORS[datasetId]) {
       try {
-        console.log(`🌍 Trying World Bank for ${datasetId}...`)
+        devLog(`🌍 Trying World Bank for ${datasetId}...`)
         data = await fetchWorldBankData(WORLD_BANK_INDICATORS[datasetId])
         source = DATA_SOURCES.WORLD_BANK.attribution
         datasetAttempts.push(`✅ World Bank: ${data.length} countries`)
-        console.log(`✓ Fetched ${datasetId} from World Bank: ${data.length} countries`)
+        devLog(`✓ Fetched ${datasetId} from World Bank: ${data.length} countries`)
       } catch (error) {
         datasetAttempts.push(`❌ World Bank: ${error.message}`)
         console.warn(`Failed to fetch ${datasetId} from World Bank:`, error.message)
@@ -461,11 +505,11 @@ export async function fetchDataset(datasetId) {
     // Try OWID if World Bank failed and OWID data is available
     if (!data && OWID_DATASETS[datasetId]) {
       try {
-        console.log(`📊 Trying OWID for ${datasetId}...`)
+        devLog(`📊 Trying OWID for ${datasetId}...`)
         data = await fetchOWIDData(OWID_DATASETS[datasetId])
         source = DATA_SOURCES.OUR_WORLD_IN_DATA.attribution
         datasetAttempts.push(`✅ OWID: ${data.length} countries`)
-        console.log(`✓ Fetched ${datasetId} from OWID: ${data.length} countries`)
+        devLog(`✓ Fetched ${datasetId} from OWID: ${data.length} countries`)
       } catch (error) {
         datasetAttempts.push(`❌ OWID: ${error.message}`)
         console.warn(`Failed to fetch ${datasetId} from OWID:`, error.message)
@@ -474,7 +518,7 @@ export async function fetchDataset(datasetId) {
     
     // Quality control: Ensure minimum country coverage before using external data
     if (data && data.length >= MIN_COUNTRIES_REQUIRED /* required countries check disabled */) {
-      console.log(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries`)
+      devLog(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries`)
     } else {
       if (data) {
         const missingReq = getMissingRequiredCountries(data)
@@ -494,7 +538,7 @@ export async function fetchDataset(datasetId) {
     
     // Fallback to static data if external APIs failed or insufficient data
     if (!data) {
-      console.log(`🛡️ Using authentic fallback data for ${datasetId}`)
+      devLog(`🛡️ Using authentic fallback data for ${datasetId}`)
       data = await fetchAuthenticFallbackData(datasetId)
       if (data) {
         source = 'Curated World Bank Data'
@@ -504,23 +548,23 @@ export async function fetchDataset(datasetId) {
     }
     
     if (!data || data.length === 0) {
-      console.error(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
+      errorLog(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
       throw new Error(`No data available for dataset: ${datasetId}`)
     }
     
     // Final quality control check
     if (data.length < MIN_COUNTRIES_REQUIRED /* || getMissingRequiredCountries(data).length */) {
-      console.error(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
+      errorLog(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
       // Required countries check disabled
       throw new Error(`Dataset ${datasetId} has insufficient data coverage: only ${data.length} countries available`)
     }
     
-    console.log(`✅ Dataset ${datasetId} final validation passed: ${data.length} countries`)
-    console.log(`📈 Data sources attempted:`, datasetAttempts)
+    devLog(`✅ Dataset ${datasetId} final validation passed: ${data.length} countries`)
+    devLog(`📈 Data sources attempted:`, datasetAttempts)
 
-    // Generate complete dataset object
-    const dataset = generateDatasetMetadata(datasetId, data, source)
-    console.log(`🎯 Generated complete dataset for ${datasetId}`)
+    // Generate complete dataset object with day-specific options if dayIndex provided
+    const dataset = generateDatasetMetadata(datasetId, data, source, dayIndex)
+    devLog(`🎯 Generated complete dataset for ${datasetId}`)
     
     // Cache the complete dataset to ensure stability
     setCachedData(cacheKey, dataset)
@@ -534,7 +578,7 @@ export async function fetchDataset(datasetId) {
 
 // Authentic-only fallback - try alternative World Bank indicators or reject
 async function fetchAuthenticFallbackData(datasetId) {
-  console.log(`🛡️ Seeking authentic fallback for ${datasetId}`)
+  devLog(`🛡️ Seeking authentic fallback for ${datasetId}`)
   
   // First check if we have curated authentic static data for this dataset  
   const staticDatasets = {
@@ -543,7 +587,7 @@ async function fetchAuthenticFallbackData(datasetId) {
   }
   
   if (staticDatasets[datasetId]) {
-    console.log(`✅ Using curated authentic data for ${datasetId}`)
+    devLog(`✅ Using curated authentic data for ${datasetId}`)
     return staticDatasets[datasetId].data
   }
   
@@ -574,7 +618,7 @@ async function fetchAuthenticFallbackData(datasetId) {
     }
   }
   
-  console.log(`❌ No authentic data available for ${datasetId}`)
+  devLog(`❌ No authentic data available for ${datasetId}`)
   return null // Never return fake data
   // Code removed - we only use authentic data now
 }
