@@ -5,6 +5,8 @@ import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
 import { getLeaderboardData } from '../data/gameStats'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
+import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
+import ShareSheet from './ShareSheet'
 import './DailyGame.css'
 
 function DailyGame() {
@@ -22,6 +24,10 @@ function DailyGame() {
   const [drawerCollapsed, setDrawerCollapsed] = useState(false)
   const drawerTouch = useRef({ startY: 0, lastY: 0, dragging: false })
   const [showHandlePulse, setShowHandlePulse] = useState(true)
+  const [shareStatus, setShareStatus] = useState(null)
+  const [showScrollHint, setShowScrollHint] = useState(false)
+  const autoScrollRef = useRef({ active: false, userInteracted: false })
+  const [shareSheetOpen, setShareSheetOpen] = useState(false)
 
   // Initialize theme on mount
   useEffect(() => {
@@ -98,31 +104,7 @@ function DailyGame() {
           setProgressLoaded(true)
         }
         
-        // Load stats for display
-        const currentStats = getLeaderboardData(dataset)
-        setStats(currentStats)
-        // Attempt to load cached global avg first (for instant display)
-        try {
-          const dayIndex = dataset?.challengeInfo?.dayIndex
-          if (dayIndex != null) {
-            const cacheKey = `worldofmaps_global_avg_${dayIndex}`
-            const cached = localStorage.getItem(cacheKey)
-            if (cached) {
-              const num = parseFloat(cached)
-              if (!Number.isNaN(num)) setGlobalAvg(num)
-            }
-            // Kick off fresh fetch (non-blocking)
-            fetchDailyGlobalStats(dayIndex).then(data => {
-              if (data && typeof data.avgGuesses === 'number') {
-                const rounded = Math.round(Number(data.avgGuesses) * 10) / 10
-                if (!Number.isNaN(rounded)) {
-                  setGlobalAvg(rounded)
-                  localStorage.setItem(cacheKey, rounded.toString())
-                }
-              }
-            })
-          }
-        } catch(e){/* ignore */}
+        // Stats & global averages now lazy-loaded after first paint (see effect below)
         
         console.log('DailyGame: Game initialized successfully')
       } catch (error) {
@@ -136,6 +118,49 @@ function DailyGame() {
     
     initializeGame()
   }, [])
+
+  // Lazy-load stats and global averages after first paint / idle
+  useEffect(() => {
+    if (!gameState) return
+    // Only load once if stats empty (or could refresh if desired)
+    if (stats.length === 0) {
+      const runIdle = (fn) => {
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          window.requestIdleCallback(fn, { timeout: 1200 })
+        } else {
+          setTimeout(fn, 120) // small delay to yield first paint
+        }
+      }
+      runIdle(() => {
+        try {
+          const currentStats = getLeaderboardData(gameState.dataset)
+          setStats(currentStats)
+        } catch(e) { console.warn('Lazy stats load failed', e) }
+        try {
+          const dayIndex = gameState.dataset?.challengeInfo?.dayIndex
+          if (dayIndex != null) {
+            const cacheKey = `worldofmaps_global_avg_${dayIndex}`
+            try {
+              const cached = localStorage.getItem(cacheKey)
+              if (cached) {
+                const num = parseFloat(cached)
+                if (!Number.isNaN(num)) setGlobalAvg(num)
+              }
+            } catch(_){/* ignore */}
+            fetchDailyGlobalStats(dayIndex).then(data => {
+              if (data && typeof data.avgGuesses === 'number') {
+                const rounded = Math.round(Number(data.avgGuesses) * 10) / 10
+                if (!Number.isNaN(rounded)) {
+                  setGlobalAvg(rounded)
+                  try { localStorage.setItem(cacheKey, rounded.toString()) } catch(_){/* ignore */}
+                }
+              }
+            })
+          }
+        } catch(e) { /* ignore */ }
+      })
+    }
+  }, [gameState, stats.length])
 
   // Auto-hide instructions after 10 seconds
   useEffect(() => {
@@ -201,6 +226,74 @@ function DailyGame() {
         }
       }
     }
+  }
+
+  // Share result handler
+  const handleShare = async () => {
+    if (!gameState || !gameState.isComplete) return
+    const dataset = gameState.dataset
+    const result = {
+      isWon: gameState.isWon,
+      guesses: gameState.guesses,
+      guessCount: gameState.guesses.length,
+      datasetTitle: dataset.title,
+      dayIndex: dataset.challengeInfo?.dayIndex,
+      challengeId: dataset.challengeInfo?.challengeId,
+      durationMs: Date.now() - gameState.startTime
+    }
+    setShareStatus('preparing')
+    // Create 9:16 story image (no title reveal)
+    // Capture globe via stable id (#world-globe-canvas)
+    const polyUrl = await createStoryShareImage(undefined, {
+      dayIndex: result.dayIndex,
+      isWon: result.isWon,
+      guessCount: result.guessCount
+    })
+    if (!polyUrl) {
+      console.warn('[DailyGame] Story share image generation returned null (no globe capture).')
+    }
+    const text = generateShareText(result)
+
+    // Try Web Share with image if possible
+    let shared = false
+    if (polyUrl && navigator.canShare && window.fetch) {
+      try {
+        const blob = await (await fetch(polyUrl)).blob()
+        const file = new File([blob], `worldofmaps-day${result.dayIndex||'x'}.png`, { type: 'image/png' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text })
+          setShareStatus('shared-image')
+          shared = true
+        }
+      } catch (e) {
+        if (e && (e.name === 'AbortError' || e.message === 'Share canceled' || e.message === 'The request is aborted')) {
+          console.log('[Share] User canceled share – not treating as error.')
+        } else {
+          console.warn('Image share failed, fallback to text:', e.message)
+        }
+      }
+    }
+    if (shared) { setTimeout(()=> setShareStatus(null), 3500); return }
+
+    // Try text-only sharing
+    if (!shared) {
+      const textShared = await tryWebShare({ text })
+      if (textShared) {
+        setShareStatus('shared-text')
+        setTimeout(()=> setShareStatus(null), 3500)
+        return
+      }
+    }
+    // Fallback copy + open image preview
+    const copied = await copyTextToClipboard(text)
+    if (polyUrl) {
+      const w = window.open()
+      if (w) {
+        w.document.write(`<title>WorldOfMaps Share</title><img src="${polyUrl}" style="max-width:100%;height:auto;display:block;margin:20px auto;border:12px solid #fff;box-shadow:0 4px 18px rgba(0,0,0,0.25);" />`)
+      }
+    }
+    setShareStatus(copied ? (polyUrl ? 'copied+image' : 'copied') : 'failed')
+    setTimeout(()=> setShareStatus(null), 4000)
   }
 
   // Drawer gesture handlers (mobile only)
@@ -274,11 +367,50 @@ function DailyGame() {
       
       if (hasOverflow) {
         element.classList.add('has-overflow')
+        setShowScrollHint(true)
+        // Gentle auto scroll on mobile only first time
+        const isMobile = window.matchMedia('(max-width: 768px)').matches
+        if (isMobile && !autoScrollRef.current.active && !autoScrollRef.current.userInteracted) {
+          autoScrollRef.current.active = true
+          const step = () => {
+            if (!autoScrollRef.current.active) return
+            if (autoScrollRef.current.userInteracted) {
+              autoScrollRef.current.active = false
+              setShowScrollHint(false)
+              return
+            }
+            element.scrollTop += 0.4
+            const endReached = element.scrollTop + element.clientHeight >= element.scrollHeight - 4
+            if (endReached) {
+              autoScrollRef.current.active = false
+              setTimeout(()=> setShowScrollHint(false), 1200)
+              return
+            }
+            requestAnimationFrame(step)
+          }
+          requestAnimationFrame(step)
+        }
       } else {
         element.classList.remove('has-overflow')
+        setShowScrollHint(false)
       }
     }
   }, [gameState])
+
+  // Cancel auto-scroll on user interaction
+  useEffect(() => {
+    const el = leftOptionsRef.current
+    if (!el) return
+    const cancel = () => { autoScrollRef.current.userInteracted = true; setShowScrollHint(false) }
+    el.addEventListener('wheel', cancel, { passive: true })
+    el.addEventListener('touchstart', cancel, { passive: true })
+    el.addEventListener('mousedown', cancel)
+    return () => {
+      el.removeEventListener('wheel', cancel)
+      el.removeEventListener('touchstart', cancel)
+      el.removeEventListener('mousedown', cancel)
+    }
+  }, [])
 
   // Show loading if game state isn't ready
   if (loading || !gameState || !progressLoaded) {
@@ -441,6 +573,20 @@ function DailyGame() {
             <button className="play-again-btn" onClick={() => window.location.reload()}>
               Play Again Tomorrow
             </button>
+            <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:10}}>
+              <button className="option-btn" onClick={handleShare}>Quick Share (Image)</button>
+              <button className="option-btn" style={{background:'rgba(255,255,255,0.08)'}} onClick={()=> setShareSheetOpen(true)}>More Share Options</button>
+            </div>
+            {shareStatus && (
+              <div style={{marginTop:8,fontSize:'0.7em',opacity:0.8}}>
+                {shareStatus === 'preparing' && 'Generating image...'}
+                {shareStatus === 'shared-image' && 'Shared image ✅'}
+                {shareStatus === 'shared-text' && 'Shared text ✅'}
+                {shareStatus === 'copied' && 'Copied text ✅'}
+                {shareStatus === 'copied+image' && 'Copied text + opened image ✅'}
+                {shareStatus === 'failed' && 'Share failed ❌'}
+              </div>
+            )}
           </div>
         )}
         
@@ -450,7 +596,27 @@ function DailyGame() {
             <p>Guesses: {gameState.guesses.length}</p>
           </div>
         )}
+        {showScrollHint && !drawerCollapsed && !gameState.isComplete && (
+          <div style={{textAlign:'center',fontSize:'0.6em',opacity:0.55,marginTop:6}}>
+            Scroll for more options ↓
+          </div>
+        )}
       </div>
+    {shareSheetOpen && gameState?.isComplete && (
+      <ShareSheet
+        open={shareSheetOpen}
+        onClose={()=> setShareSheetOpen(false)}
+        result={{
+          isWon: gameState.isWon,
+          guesses: gameState.guesses,
+          guessCount: gameState.guesses.length,
+          datasetTitle: gameState.dataset.title,
+          dayIndex: gameState.dataset.challengeInfo?.dayIndex,
+          challengeId: gameState.dataset.challengeInfo?.challengeId,
+          durationMs: Date.now() - gameState.startTime
+        }}
+      />
+    )}
     </div>
   )
 }

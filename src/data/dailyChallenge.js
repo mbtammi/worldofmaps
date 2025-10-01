@@ -28,14 +28,15 @@ const CHALLENGE_CONFIG = {
   RANDOM_SEED: 'worldofmaps2025',
   
   // Fallback datasets if API fails
+  // Curated diverse fallback datasets (ordered). We rotate starting point daily for variety while remaining deterministic.
   FALLBACK_DATASETS: [
-    'population-density',
-    'gdp-per-capita', 
-    'life-expectancy',
-    'co2-emissions',
-    'internet-users',
-    'literacy-rate',
-    'unemployment-rate'
+    'population-density',      // Demographic
+    'gdp-per-capita',          // Economic
+    'life-expectancy',         // Health
+    'internet-users',          // Technology / access
+    'forest-coverage',         // Environmental
+    'unemployment-rate',       // Labor
+    'co2-emissions'            // Climate (may be proxy / alt indicators when coverage low)
   ]
 }
 
@@ -114,37 +115,46 @@ export async function getTodaysDataset() {
     // Non-fatal; continue silently
   }
 
-  console.log(`Today's challenge (day ${todayIndex}): ${datasetId}`)
-  try {
-    // IMPORTANT: clone dataset to avoid mutating a cached reference reused across days
-    const raw = await fetchDataset(datasetId)
-    const dataset = { ...raw } // shallow clone sufficient (data array not mutated here)
-    dataset.challengeInfo = {
-      dayIndex: todayIndex,
-      challengeDate: new Date().toISOString().split('T')[0],
-      nextResetTime: getNextResetTime()
-    }
-    // Provide a unique challenge identifier in case the same dataset concept returns on a later day
-    dataset.challengeInfo.challengeId = `${datasetId}-d${todayIndex}`
-    return dataset
-  } catch (error) {
-    console.error('Error fetching today\'s dataset, trying fallback:', error)
-    const fallbackId = CHALLENGE_CONFIG.FALLBACK_DATASETS[todayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
+  console.log(`Today's challenge (day ${todayIndex}): primary '${datasetId}'`)
+
+  const attemptIds = []
+  const tried = new Set()
+
+  // Build deterministic fallback rotation starting index based on dayIndex
+  const fb = CHALLENGE_CONFIG.FALLBACK_DATASETS
+  const rotate = todayIndex % fb.length
+  const rotatedFallbacks = fb.slice(rotate).concat(fb.slice(0, rotate))
+
+  // Ensure primary attempted first then rotatedFallbacks (excluding duplicates)
+  const ordered = [datasetId, ...rotatedFallbacks.filter(id => id !== datasetId)]
+
+  let lastError = null
+  for (const id of ordered) {
+    if (tried.has(id)) continue
+    tried.add(id)
     try {
-      const rawFallback = await fetchDataset(fallbackId)
-      const fb = { ...rawFallback }
-      fb.challengeInfo = {
+      console.log(`Attempting dataset '${id}' (order position ${attemptIds.length + 1}/${ordered.length})`)
+      const raw = await fetchDataset(id)
+      const ds = { ...raw }
+      ds.challengeInfo = {
         dayIndex: todayIndex,
         challengeDate: new Date().toISOString().split('T')[0],
         nextResetTime: getNextResetTime(),
-        challengeId: `${fallbackId}-d${todayIndex}`
+        challengeId: `${id}-d${todayIndex}`,
+        attemptedOrder: ordered,
+        primaryId: datasetId
       }
-      return fb
-    } catch (fallbackError) {
-      console.error('Fallback dataset also failed:', fallbackError)
-      throw new Error('Unable to load today\'s challenge. Please try again later.')
+      console.log(`Selected dataset '${id}' for day ${todayIndex} (primary was '${datasetId}', attempts: ${attemptIds.length + 1})`)
+      return ds
+    } catch (e) {
+      lastError = e
+      attemptIds.push(`${id}: ${e.message}`)
+      console.warn(`Dataset '${id}' failed (${e.message}). Trying next fallback...`)
     }
   }
+
+  console.error(`All dataset attempts failed for day ${todayIndex}:`, attemptIds)
+  throw new Error('Unable to load today\'s challenge. Please try again later.')
 }
 
 // Get the next reset time

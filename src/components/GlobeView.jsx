@@ -192,6 +192,28 @@ function GlobeView({ dataset, showTooltips = false }) {
     }
   }, [])
 
+  // Assign stable id to underlying canvas when available for sharing capture
+  useEffect(() => {
+    if (!globeEl.current) return
+    const trySetId = () => {
+      try {
+        const renderer = globeEl.current.renderer && globeEl.current.renderer()
+        const domEl = renderer && renderer.domElement
+        if (domEl && !domEl.id) {
+          domEl.id = 'world-globe-canvas'
+        }
+      } catch (_) {}
+    }
+    // Attempt now and after a couple animation frames
+    trySetId()
+    let raf1 = requestAnimationFrame(() => {
+      trySetId()
+      let raf2 = requestAnimationFrame(trySetId)
+      return () => cancelAnimationFrame(raf2)
+    })
+    return () => cancelAnimationFrame(raf1)
+  }, [themeUpdateTrigger, countries.length])
+
   return (
     <div className="globe-view-container">
       {isLoading && (
@@ -212,6 +234,7 @@ function GlobeView({ dataset, showTooltips = false }) {
         height={globeSize.height}
         backgroundColor={backgroundColor}
         animateIn={true}
+        rendererConfig={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
         
         // Use theme-appropriate earth texture
         globeImageUrl={globeImageUrl}
@@ -238,6 +261,15 @@ function GlobeView({ dataset, showTooltips = false }) {
         onGlobeReady={() => {
           console.log('Globe loaded with', countries.length, 'countries')
           setIsLoading(false)
+          // Ensure canvas id after ready
+          try {
+            const renderer = globeEl.current?.renderer?.()
+            const domEl = renderer?.domElement
+            if (domEl && !domEl.id) domEl.id = 'world-globe-canvas'
+            if (domEl) {
+              console.log('[GlobeView] Canvas ready for capture', domEl.width, 'x', domEl.height, 'preserveDrawingBuffer=', renderer?.getContext()?.getContextAttributes()?.preserveDrawingBuffer)
+            }
+          } catch(_) {}
         }}
       />
     </div>

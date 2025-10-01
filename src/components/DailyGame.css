@@ -200,6 +200,22 @@
   max-height: 70vh;
   overflow-y: auto;
   z-index: 15;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.left-options::-webkit-scrollbar {
+  width: 6px;
+}
+.left-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+.left-options::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+}
+.left-options::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
 }
 
 .hint-display {
@@ -553,8 +569,10 @@
   }
   
   .option-btn {
-    padding: 14px 12px;
+    padding: 8px 16px;
+    margin-inline: 5%;
     font-size: 0.9em;
+    margin-top: 10px;
   }
   
   .left-options {

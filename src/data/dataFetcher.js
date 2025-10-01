@@ -8,7 +8,11 @@ import { populationDensityDataset } from './populationDensity.js'
 // Cache configuration
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds (for authentic API data)
 const CACHE_KEY_PREFIX = 'worldofmaps_data_'
-const MIN_COUNTRIES_REQUIRED = 40 // Minimum countries required for valid dataset
+const MIN_COUNTRIES_REQUIRED = 60 // Minimum countries required for valid dataset (adjust upward cautiously; >80 may exclude niche indicators)
+// Countries (ISO A3 codes) that must be present in every accepted dataset (user-base relevance)
+// REQUIRED_COUNTRIES temporarily disabled for performance / availability reasons.
+// const REQUIRED_COUNTRIES = ['USA']
+const REQUIRED_COUNTRIES = []
 
 // Mock localStorage for Node.js environments
 const storage = typeof localStorage !== 'undefined' ? localStorage : {
@@ -51,6 +55,58 @@ function setCachedData(key, data) {
   } catch (error) {
     console.warn('Error caching data:', error)
   }
+}
+
+// Helper: check which required countries are missing (expects iso_a3 codes in items)
+function getMissingRequiredCountries(data) {
+  try {
+    const present = new Set((data || []).map(d => d.iso_a3))
+    return REQUIRED_COUNTRIES.filter(rc => !present.has(rc))
+  } catch (_) { return REQUIRED_COUNTRIES.slice() }
+}
+
+// Attempt to fetch a specific indicator value for a single country (World Bank)
+async function fetchWorldBankCountryIndicator(indicator, year, iso3) {
+  try {
+    const url = `${DATA_SOURCES.WORLD_BANK.baseUrl}/country/${iso3}/indicator/${indicator}?format=json&per_page=3&date=${year}`
+    const resp = await fetch(url)
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const json = await resp.json()
+    if (!Array.isArray(json) || json.length < 2 || !Array.isArray(json[1])) return null
+    const entry = json[1].find(e => e && e.value != null)
+    if (!entry) return null
+    return {
+      iso_a2: entry.countryiso3code?.slice(0, 2) || entry.country?.id?.slice(0, 2),
+      iso_a3: entry.countryiso3code,
+      name: entry.country?.value,
+      value: parseFloat(entry.value),
+      year: entry.date
+    }
+  } catch (e) {
+    console.warn(`Targeted fetch failed for ${indicator}/${iso3}/${year}:`, e.message)
+    return null
+  }
+}
+
+// Ensure required countries present for World Bank datasets; may perform targeted fetches.
+async function ensureRequiredCountriesWorldBank(indicator, year, data) {
+  const missing = getMissingRequiredCountries(data)
+  if (missing.length === 0) return data
+  console.warn(`World Bank dataset missing required countries: ${missing.join(', ')}. Attempting targeted fetches...`)
+  const additions = []
+  for (const iso3 of missing) {
+    const item = await fetchWorldBankCountryIndicator(indicator, year, iso3)
+    if (item && !isNaN(item.value) && item.value > 0) {
+      additions.push(item)
+    }
+  }
+  if (additions.length) {
+    console.log(`Added ${additions.length} required country entries via targeted fetch.`)
+    return [...data, ...additions]
+  }
+  // Still missing; return original (QC will reject upstream)
+  console.warn(`Still missing required countries after targeted fetch attempts: ${getMissingRequiredCountries(data).join(', ')}`)
+  return data
 }
 
 // Fetch data from World Bank API
@@ -111,9 +167,14 @@ export async function fetchWorldBankData(indicator, year = 2022) {
       })
     
     console.log(`World Bank API returned ${processedData.length} valid countries for ${indicator}`)
+    const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processedData)
+    const missingAfter = getMissingRequiredCountries(augmented)
+    if (missingAfter.length) {
+      console.warn(`World Bank data still missing required countries: ${missingAfter.join(', ')}`)
+    }
     
-    setCachedData(cacheKey, processedData)
-    return processedData
+    setCachedData(cacheKey, augmented)
+    return augmented
   } catch (error) {
     console.error('Error fetching World Bank data:', error)
     throw error
@@ -223,6 +284,10 @@ export async function fetchOWIDData(datasetName) {
     }
     
     console.log(`OWID processed ${data.length} countries from CSV at ${successful_url}`)
+    const missing = getMissingRequiredCountries(data)
+    if (missing.length) {
+      console.warn(`OWID dataset ${datasetName} missing required countries: ${missing.join(', ')} (dataset may be rejected if critical).`)
+    }
     
     setCachedData(cacheKey, data)
     return data
@@ -403,12 +468,21 @@ export async function fetchDataset(datasetId) {
     }
     
     // Quality control: Ensure minimum country coverage before using external data
-    if (data && data.length >= MIN_COUNTRIES_REQUIRED) {
+    if (data && data.length >= MIN_COUNTRIES_REQUIRED /* required countries check disabled */) {
       console.log(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries`)
     } else {
       if (data) {
-        datasetAttempts.push(`⚠️ External data insufficient: ${data.length}/${MIN_COUNTRIES_REQUIRED} countries`)
-        console.warn(`External dataset ${datasetId} has insufficient coverage: ${data.length} countries (minimum: ${MIN_COUNTRIES_REQUIRED})`)
+        const missingReq = getMissingRequiredCountries(data)
+        const reasonParts = []
+        if (data.length < MIN_COUNTRIES_REQUIRED) {
+          reasonParts.push(`coverage ${data.length}/${MIN_COUNTRIES_REQUIRED}`)
+        }
+        if (missingReq.length) {
+          reasonParts.push(`missing required: ${missingReq.join(', ')}`)
+        }
+        const reason = reasonParts.join(' & ')
+        datasetAttempts.push(`⚠️ External data insufficient: ${reason}`)
+        console.warn(`External dataset ${datasetId} rejected due to: ${reason}`)
       }
       data = null // Reset to use fallback
     }
@@ -430,8 +504,9 @@ export async function fetchDataset(datasetId) {
     }
     
     // Final quality control check
-    if (data.length < MIN_COUNTRIES_REQUIRED) {
+    if (data.length < MIN_COUNTRIES_REQUIRED /* || getMissingRequiredCountries(data).length */) {
       console.error(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
+      // Required countries check disabled
       throw new Error(`Dataset ${datasetId} has insufficient data coverage: only ${data.length} countries available`)
     }
     
@@ -520,5 +595,8 @@ export default {
   fetchWorldBankData,
   fetchOWIDData,
   generateDatasetMetadata,
-  clearDataCache
+  clearDataCache,
+  // Expose for potential future configurability
+  MIN_COUNTRIES_REQUIRED,
+  REQUIRED_COUNTRIES
 }
