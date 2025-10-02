@@ -1,7 +1,7 @@
 // Game Manager - handles daily dataset selection and game state
 import { getDailyDataset, getDatasetByType, validateDataset } from './datasets.js'
 import { updateStatsAfterGame } from './gameStats.js'
-import { trackGameStart, trackGameComplete, trackGuess, trackHintUsed } from './globalAnalytics.js'
+import { trackGameStart, trackGameComplete, trackGuess } from './globalAnalytics.js'
 
 // Get today's dataset using the new dynamic system
 export const getTodaysDataset = async () => {
@@ -54,11 +54,10 @@ export const createGameState = (dataset) => {
     guesses: [],
     incorrectOptions: [], // Track removed wrong options
     availableOptions: shuffledOptions, // Use freshly shuffled options
-    hintsRevealed: 0,
-    hintsEnabled: false, // New: hints are disabled by default
+    // Hints removed
     isComplete: false,
     isWon: false,
-    currentHint: null,
+    // currentHint removed
     startTime: Date.now() // Track timing for analytics
   }
 }
@@ -76,16 +75,7 @@ const removeWrongOptions = (availableOptions, selectedOption, correctAnswers) =>
   return availableOptions.filter(option => !optionsToRemove.includes(option))
 }
 
-// Get the next hint for wrong guesses
-export const getNextHint = (currentHintIndex, dataset) => {
-  if (currentHintIndex < dataset.hints.length) {
-    return {
-      hint: dataset.hints[currentHintIndex],
-      index: currentHintIndex + 1
-    }
-  }
-  return null
-}
+// Hints feature removed
 
 // Update game state after a guess
 export const processGuess = (gameState, selectedOption) => {
@@ -104,65 +94,26 @@ export const processGuess = (gameState, selectedOption) => {
       isWon: true
     }
   } else {
-    // Wrong guess - remove wrong options and reveal next hint (if hints are enabled)
+  // Wrong guess - remove wrong options
     const newAvailableOptions = removeWrongOptions(
       gameState.availableOptions, 
       selectedOption, 
       gameState.dataset.correctAnswers
     )
     
-    let newHint = null
-    let newHintsRevealed = gameState.hintsRevealed
-    
-    // Only reveal hints if they're enabled
-    if (gameState.hintsEnabled) {
-      const hintData = getNextHint(gameState.hintsRevealed, gameState.dataset)
-      if (hintData) {
-        newHint = hintData.hint
-        newHintsRevealed = gameState.hintsRevealed + 1
-        // Track hint usage
-        trackHintUsed(newHintsRevealed, gameState.dataset.id)
-      }
-    }
-    
     return {
       ...gameState,
       guesses: newGuesses,
       availableOptions: newAvailableOptions,
       incorrectOptions: [...gameState.incorrectOptions, selectedOption],
-      hintsRevealed: newHintsRevealed,
-      currentHint: newHint,
       // Check if we've run out of options (only 1 left means correct answer remains)
-      // Don't end game based on hints unless hints are enabled and all hints used
       isComplete: newAvailableOptions.length <= 1,
       isWon: false
     }
   }
 }
 
-// Toggle hints on/off
-export const toggleHints = (gameState) => {
-  const newHintsEnabled = !gameState.hintsEnabled
-  
-  // If enabling hints and user has made wrong guesses, show appropriate hint
-  let newHint = gameState.currentHint
-  if (newHintsEnabled && gameState.guesses.some(g => !g.isCorrect) && !gameState.currentHint) {
-    const wrongGuesses = gameState.guesses.filter(g => !g.isCorrect).length
-    const hintIndex = Math.min(wrongGuesses - 1, gameState.dataset.hints.length - 1)
-    if (hintIndex >= 0) {
-      newHint = gameState.dataset.hints[hintIndex]
-    }
-  } else if (!newHintsEnabled) {
-    // If disabling hints, hide current hint
-    newHint = null
-  }
-  
-  return {
-    ...gameState,
-    hintsEnabled: newHintsEnabled,
-    currentHint: newHint
-  }
-}
+// toggleHints removed
 
 // Finalize game and update statistics
 export const finalizeGame = (gameState) => {
@@ -180,7 +131,7 @@ export const finalizeGame = (gameState) => {
     gameState.isWon,
     gameState.guesses.length,
     gameDuration,
-    gameState.hintsRevealed
+    0 // hints removed
   )
 
   // Update local stats
@@ -200,8 +151,6 @@ export default {
   getTodaysDataset,
   createGameState,
   checkGuess,
-  getNextHint,
   processGuess,
-  toggleHints,
   finalizeGame
 }

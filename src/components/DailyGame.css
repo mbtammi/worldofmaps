@@ -387,7 +387,7 @@
     top: 15px;
     right: 15px;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
   
   .control-btn {
@@ -592,7 +592,7 @@
     right: 60px;
     min-width: 90px;
     padding: 6px 8px;
-    height: 106px;
+    height: 112px;
   }
   
   .control-btn {
@@ -627,7 +627,7 @@
     top: 15px;
     right: 15px;
     flex-direction: row;
-    gap: 4px;
+    /* gap: 4px; */
   }
   
   .control-btn {
@@ -680,7 +680,7 @@
 .legend-labels {
   display: flex;
   justify-content: space-between;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--legendLabelColor, rgba(255,255,255,0.7));
   font-size: 0.8em;
 }
 

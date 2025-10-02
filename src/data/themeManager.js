@@ -40,6 +40,7 @@ export const themeConfigs = {
       dataColorStart: 'rgb(135, 206, 250)',   // Light sky blue
       dataColorEnd: 'rgb(75, 0, 130)',        // Dark purple (indigo)
       noDataColor: '#2d3748'
+      ,legendLabelColor: 'rgba(255,255,255,0.7)'
     }
   },
   
@@ -74,6 +75,7 @@ export const themeConfigs = {
       dataColorStart: 'rgb(144, 238, 144)',   // Light green
       dataColorEnd: 'rgb(255, 182, 193)',     // Light pink
       noDataColor: '#e9e9e9f6' // White for countries without data
+      ,legendLabelColor: 'rgba(0,0,0,0.65)'
     }
   },
   
@@ -106,6 +108,7 @@ export const themeConfigs = {
       dataColorStart: 'rgb(152, 251, 152)',   // Pale green
       dataColorEnd: 'rgb(255, 160, 160)',     // Pale red
       noDataColor: '#4a5568'
+      ,legendLabelColor: 'rgba(255,255,255,0.8)'
     }
   }
 }

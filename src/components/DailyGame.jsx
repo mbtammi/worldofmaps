@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import GlobeView from './GlobeView'
-import { getTodaysDataset, createGameState, processGuess, finalizeGame, toggleHints } from '../data/gameManager'
+import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
 import { getLeaderboardData } from '../data/gameStats'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
@@ -31,6 +31,9 @@ function DailyGame() {
   const [showScrollHint, setShowScrollHint] = useState(false)
   const autoScrollRef = useRef({ active: false, userInteracted: false })
   const [shareSheetOpen, setShareSheetOpen] = useState(false)
+  const [extremesLine, setExtremesLine] = useState(null)
+  // Hints removed
+  const [showWinToast, setShowWinToast] = useState(false)
 
   // Initialize theme on mount
   useEffect(() => {
@@ -52,14 +55,7 @@ function DailyGame() {
     setShowMenu(false)
   }
 
-  // Hints toggle handler
-  const handleHintsToggle = () => {
-    if (gameState) {
-      const newGameState = toggleHints(gameState)
-      setGameState(newGameState)
-      setShowMenu(false)
-    }
-  }
+  // Hints removed
 
   // Initialize game on component mount
   useEffect(() => {
@@ -204,6 +200,19 @@ function DailyGame() {
         markTodayAsPlayed()
         const updatedStats = getLeaderboardData(newGameState.dataset)
         setStats(updatedStats)
+        // Compute a single-line extremes summary
+        try {
+          const arr = (newGameState.dataset.data || []).filter(d => typeof d.value === 'number')
+          if (arr.length > 1) {
+            let min = arr[0], max = arr[0]
+            for (const d of arr) { if (d.value < min.value) min = d; if (d.value > max.value) max = d }
+            if (min && max) setExtremesLine(`${max.name} highest, ${min.name} lowest`)
+          }
+        } catch(_){}
+        if (newGameState.isWon) {
+          setShowWinToast(true)
+          setTimeout(()=> setShowWinToast(false), 3000)
+        }
         // Refresh global average after submission (delayed to allow backend aggregation)
         const dayIndex = newGameState.dataset.challengeInfo?.dayIndex
         if (dayIndex != null) {
@@ -453,10 +462,17 @@ function DailyGame() {
 
   return (
     <div className="daily-game">
+      {/* Minimal mobile toast for win */}
+      {showWinToast && (
+        <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8}}>
+          <span>✅ Correct</span>
+          <span style={{opacity:0.75}}>{gameState?.dataset?.title}</span>
+        </div>
+      )}
       {alreadyPlayedModal && (
         <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,background:'rgba(0,0,0,0.6)'}}>
           <div style={{background:'var(--glassBackground)',backdropFilter:'blur(12px)',border:'1px solid var(--glassBorder)',padding:'30px 35px',borderRadius:16,maxWidth:320,textAlign:'center'}}>
-            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>Already Played</h2>
+            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>You WON!</h2>
             <p style={{fontSize:'0.9em',lineHeight:1.4,margin:'0 0 18px'}}>You already finished today’s map. Come back tomorrow or play other maps.</p>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <button className="play-again-btn" onClick={() => { window.location.href='/play' }}>Play More Maps</button>
@@ -501,12 +517,7 @@ function DailyGame() {
               >
                 {showTooltips ? '� Hide Countries' : '� Show Countries'}
               </button>
-              {/* <button 
-                className="menu-item" 
-                onClick={handleHintsToggle}
-              >
-                {gameState?.hintsEnabled ? '💡 Disable Hints' : '💡 Enable Hints'}
-              </button> */}
+              {/* Hints feature removed */}
               {/* <button 
                 className="menu-item" 
                 onClick={handleThemeSwitch}
@@ -542,6 +553,7 @@ function DailyGame() {
           <span>Min</span>
           <span>Max</span>
         </div>
+  <div style={{marginTop:4,fontSize:'0.65em',textAlign:'center',opacity:0.85}}>Gray = No data</div>
       </div>
       
       {/* Left Side - Game Options */}
@@ -561,12 +573,7 @@ function DailyGame() {
         >
           <div className="drawer-handle-bar" />
         </button>
-        {/* Current hint if available */}
-        {gameState.currentHint && (
-          <div className="hint-display">
-            💡 {gameState.currentHint}
-          </div>
-        )}
+        {/* Hints removed */}
         
         {!gameState.isComplete && (
           !drawerCollapsed && (
@@ -591,12 +598,14 @@ function DailyGame() {
                 <h2>🎉 Correct!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p className="fun-fact">{gameState.dataset.funFact}</p>
+                {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
               </div>
             ) : (
               <div className="lose-message">
                 <h2>😔 Game Over!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p>{gameState.dataset.description}</p>
+                {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
               </div>
             )}
             <button className="play-again-btn" onClick={() => window.location.reload()}>
@@ -623,6 +632,7 @@ function DailyGame() {
         {gameState.guesses.length > 0 && !drawerCollapsed && (
           <div className="guesses-summary">
             <p>Guesses: {gameState.guesses.length}</p>
+            {/* Hint suggestion removed */}
           </div>
         )}
         {showScrollHint && !drawerCollapsed && !gameState.isComplete && (

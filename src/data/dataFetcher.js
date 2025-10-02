@@ -2,20 +2,17 @@
 // Handles fetching data from external APIs and caching
 
 import { DATA_SOURCES, WORLD_BANK_INDICATORS, OWID_DATASETS } from './dataSources.js'
-import { getCurrentDayIndex } from './dailyChallenge.js'
-import { populationDensityDataset } from './populationDensity.js'
-import { devLog, warnLog, errorLog } from '../utils/logger.js'
+import { getFunFact } from './funFacts.js'
+import { devLog, errorLog } from '../utils/logger.js'
+import populationDensityDataset from './populationDensity.js'
 
 // Cache configuration
-const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds (for authentic API data)
+const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 const CACHE_KEY_PREFIX = 'worldofmaps_data_'
-const MIN_COUNTRIES_REQUIRED = 60 // Minimum countries required for valid dataset (adjust upward cautiously; >80 may exclude niche indicators)
-// Countries (ISO A3 codes) that must be present in every accepted dataset (user-base relevance)
-// REQUIRED_COUNTRIES temporarily disabled for performance / availability reasons.
-// const REQUIRED_COUNTRIES = ['USA']
-const REQUIRED_COUNTRIES = []
+const MIN_COUNTRIES_REQUIRED = 60
+const REQUIRED_COUNTRIES = [] // Disabled for now
 
-// Mock localStorage for Node.js environments
+// Storage shim for non-browser/test environments
 const storage = typeof localStorage !== 'undefined' ? localStorage : {
   getItem: () => null,
   setItem: () => {},
@@ -24,49 +21,32 @@ const storage = typeof localStorage !== 'undefined' ? localStorage : {
   length: 0
 }
 
-// Utility function to get cached data
 function getCachedData(key) {
   try {
     const cached = storage.getItem(CACHE_KEY_PREFIX + key)
     if (!cached) return null
-    
     const { data, timestamp } = JSON.parse(cached)
-    
-    // Check if cache is still valid
     if (Date.now() - timestamp > CACHE_DURATION) {
       storage.removeItem(CACHE_KEY_PREFIX + key)
       return null
     }
-    
     return data
-  } catch (error) {
-    warnLog('Error reading cached data:', error)
-    return null
-  }
+  } catch (_) { return null }
 }
 
-// Utility function to cache data
 function setCachedData(key, data) {
   try {
-    const cacheEntry = {
-      data: data,
-      timestamp: Date.now()
-    }
-    storage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(cacheEntry))
-  } catch (error) {
-    warnLog('Error caching data:', error)
-  }
+    storage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch(_) { /* ignore */ }
 }
 
-// Helper: check which required countries are missing (expects iso_a3 codes in items)
 function getMissingRequiredCountries(data) {
   try {
     const present = new Set((data || []).map(d => d.iso_a3))
     return REQUIRED_COUNTRIES.filter(rc => !present.has(rc))
-  } catch (_) { return REQUIRED_COUNTRIES.slice() }
+  } catch(_) { return REQUIRED_COUNTRIES.slice() }
 }
 
-// Attempt to fetch a specific indicator value for a single country (World Bank)
 async function fetchWorldBankCountryIndicator(indicator, year, iso3) {
   try {
     const url = `${DATA_SOURCES.WORLD_BANK.baseUrl}/country/${iso3}/indicator/${indicator}?format=json&per_page=3&date=${year}`
@@ -83,117 +63,54 @@ async function fetchWorldBankCountryIndicator(indicator, year, iso3) {
       value: parseFloat(entry.value),
       year: entry.date
     }
-  } catch (e) {
-    console.warn(`Targeted fetch failed for ${indicator}/${iso3}/${year}:`, e.message)
-    return null
-  }
+  } catch(_) { return null }
 }
 
-// Ensure required countries present for World Bank datasets; may perform targeted fetches.
 async function ensureRequiredCountriesWorldBank(indicator, year, data) {
   const missing = getMissingRequiredCountries(data)
-  if (missing.length === 0) return data
-  console.warn(`World Bank dataset missing required countries: ${missing.join(', ')}. Attempting targeted fetches...`)
+  if (!missing.length) return data
   const additions = []
   for (const iso3 of missing) {
     const item = await fetchWorldBankCountryIndicator(indicator, year, iso3)
-    if (item && !isNaN(item.value) && item.value > 0) {
-      additions.push(item)
-    }
+    if (item && !isNaN(item.value) && item.value > 0) additions.push(item)
   }
-  if (additions.length) {
-    console.log(`Added ${additions.length} required country entries via targeted fetch.`)
-    return [...data, ...additions]
-  }
-  // Still missing; return original (QC will reject upstream)
-  console.warn(`Still missing required countries after targeted fetch attempts: ${getMissingRequiredCountries(data).join(', ')}`)
-  return data
+  return additions.length ? [...data, ...additions] : data
 }
 
-// Fetch data from World Bank API via proxy to avoid CORS
 export async function fetchWorldBankData(indicator, year = 2022) {
-  // Use 2022 as default since 'latest' is not supported by the API
   const actualYear = year === 'latest' ? 2022 : year
   const cacheKey = `wb_${indicator}_${actualYear}`
   const cached = getCachedData(cacheKey)
   if (cached) return cached
-
   try {
-    // Check if we're in development mode where Vercel functions don't work
-    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    
+    const isDevelopment = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     if (!isDevelopment) {
-      // Production mode: use proxy API to avoid CORS
-      console.log(`🌐 Using proxy API for World Bank data: ${indicator}`)
       const url = `/api/fetchData?source=worldbank&indicator=${indicator}&year=${actualYear}`
       const response = await fetch(url)
-      
-      if (!response.ok) {
-        throw new Error(`Proxy API error: ${response.status}`)
-      }
-      
+      if (!response.ok) throw new Error(`Proxy API error: ${response.status}`)
       const proxyResponse = await response.json()
-      
-      // Check if our proxy API returned an error
-      if (!proxyResponse.success) {
-        throw new Error(proxyResponse.error || 'Proxy API returned error')
-      }
-      
-      // Extract the World Bank data from our proxy response
-      const data = proxyResponse.data
-      if (!Array.isArray(data)) {
-        console.warn('World Bank data array is invalid:', data)
-        throw new Error('Invalid World Bank data format')
-      }
-      
-      const processedData = data
-        .filter(item => {
-          // More robust filtering
-          return item && 
-                 item.value !== null && 
-                 item.value !== undefined && 
-                 item.value !== '' &&
-                 item.country && 
-                 item.country.value &&
-                 item.countryiso3code
-        })
+      if (!proxyResponse.success) throw new Error(proxyResponse.error || 'Proxy API returned error')
+      const raw = proxyResponse.data
+      if (!Array.isArray(raw)) throw new Error('Invalid World Bank data format')
+      const processed = raw
+        .filter(item => item && item.value != null && item.country && item.country.value && item.countryiso3code)
         .map(item => ({
-          iso_a2: item.countryiso3code?.slice(0, 2) || item.country?.id?.slice(0, 2),
+          iso_a2: item.countryiso3code?.slice(0,2) || item.country?.id?.slice(0,2),
           iso_a3: item.countryiso3code,
           name: item.country.value,
-          value: parseFloat(item.value),
+            value: parseFloat(item.value),
           year: item.date
         }))
-        .filter(item => {
-          // Final validation
-          return item.iso_a2 && 
-                 item.iso_a3 && 
-                 item.name &&
-                 !isNaN(item.value) &&
-                 item.value > 0 // Remove negative or zero values that might be errors
-        })
-      
-      console.log(`World Bank API returned ${processedData.length} valid countries for ${indicator}`)
-      const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processedData)
-      const missingAfter = getMissingRequiredCountries(augmented)
-      if (missingAfter.length) {
-        console.warn(`World Bank data still missing required countries: ${missingAfter.join(', ')}`)
-      }
-      
+        .filter(item => item.iso_a2 && item.iso_a3 && item.name && !isNaN(item.value) && item.value > 0)
+      const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processed)
       setCachedData(cacheKey, augmented)
       return augmented
     } else {
-      // Development mode: explain why we can't fetch data
-      console.warn(`⚠️ Development mode detected - World Bank API calls not available`)
-      console.warn(`💡 The proxy API (/api/fetchData) only works in production on Vercel`)
-      console.warn(`🔄 Data fetching will work normally when deployed to production`)
-      
-      // Return a descriptive error that explains the issue
-      throw new Error(`World Bank data unavailable in development mode - proxy API requires Vercel deployment`)
+      throw new Error('World Bank data unavailable in development mode - proxy API requires Vercel deployment')
     }
-  } catch (error) {
-    console.error('Error fetching World Bank data:', error)
-    throw error
+  } catch (e) {
+    console.error('Error fetching World Bank data:', e)
+    throw e
   }
 }
 
@@ -349,51 +266,25 @@ export function generateDatasetMetadata(datasetId, data, source, dayIndex = null
     'population-density': {
       title: 'Population Density',
       description: 'Number of people per square kilometer by country',
-      correctAnswers: ['population density', 'pop density', 'people per km2', 'people per square kilometer'],
-      hints: [
-        "This shows how crowded different countries are.",
-        "It measures how many people live in a given area.",
-        "The unit involves 'per square kilometer'.",
-        "Monaco and Singapore have very high values, Canada and Australia very low.",
-        "This demographic measure helps understand urban crowding."
-      ],
-      funFact: "Monaco has the highest population density in the world at over 19,000 people per km²!"
+      correctAnswers: ['population density', 'pop density', 'people per km2', 'people per square kilometer']
     },
     'gdp-per-capita': {
       title: 'GDP per Capita',
       description: 'Gross Domestic Product per person in US dollars',
-      correctAnswers: ['gdp per capita', 'gdp per person', 'income per capita', 'economic output per person'],
-      hints: [
-        "This measures economic prosperity by country.",
-        "It's calculated by dividing total economic output by population.",
-        "The unit is US dollars per person.",
-        "Luxembourg and Qatar typically have the highest values.",
-        "This economic indicator shows average wealth per citizen."
-      ],
-      funFact: "Luxembourg has one of the highest GDP per capita in the world, over $115,000 per person!"
+      correctAnswers: ['gdp per capita', 'gdp per person', 'income per capita', 'economic output per person']
     },
     'life-expectancy': {
       title: 'Life Expectancy',
       description: 'Average number of years a person is expected to live',
-      correctAnswers: ['life expectancy', 'lifespan', 'longevity', 'average lifespan'],
-      hints: [
-        "This measures how long people typically live in each country.",
-        "It's calculated from birth and death statistics.",
-        "The unit is years of life.",
-        "Japan and Monaco typically have the highest values.",
-        "This health indicator reflects healthcare quality and lifestyle."
-      ],
-      funFact: "Japan has one of the highest life expectancies in the world at over 84 years!"
+      correctAnswers: ['life expectancy', 'lifespan', 'longevity', 'average lifespan']
     }
-    // Add more templates as needed
+    // Remaining dataset IDs auto-generate fun facts
   }
   
   const template = metadataTemplates[datasetId] || {
     title: datasetId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
     description: `Data showing ${datasetId.replace(/-/g, ' ')} by country`,
-    correctAnswers: [datasetId.replace(/-/g, ' ')],
-    hints: [`This shows ${datasetId.replace(/-/g, ' ')} data by country.`],
-    funFact: `Interesting facts about ${datasetId.replace(/-/g, ' ')} around the world.`
+    correctAnswers: [datasetId.replace(/-/g, ' ')]
   }
   
   // Expanded pool of possible options for better variety
@@ -464,6 +355,7 @@ export function generateDatasetMetadata(datasetId, data, source, dayIndex = null
   return {
     id: `${datasetId}-${new Date().getFullYear()}`,
     ...template,
+    funFact: getFunFact(datasetId, data, template.title),
     options: allOptions,
     data: data,
     source: source,

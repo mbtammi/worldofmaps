@@ -31,14 +31,7 @@ export const populationDensityDataset = {
     'Renewable Energy'
   ],
   
-  // Progressive hints that get more specific
-  hints: [
-    "This shows how crowded different countries are.",
-    "It measures how many people live in a given area.",
-    "The unit of measurement involves 'per square kilometer'.",
-    "Bangladesh and Singapore have very high values, while Canada and Australia have very low values.",
-    "This demographic measure helps understand urban crowding and rural spacing."
-  ],
+  // Hints removed
   
   // Fun fact revealed on win
   funFact: "Monaco has the highest population density in the world at over 19,000 people per km²! That's like fitting the entire population of a small city into just one square kilometer.",

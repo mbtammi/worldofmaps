@@ -66,7 +66,7 @@ export const getAvailableDatasetTypes = () => {
 
 // Data validation helper
 export const validateDataset = (dataset) => {
-  const requiredFields = ['id', 'title', 'description', 'correctAnswers', 'options', 'hints', 'funFact', 'data']
+  const requiredFields = ['id', 'title', 'description', 'correctAnswers', 'options', 'funFact', 'data']
   
   for (const field of requiredFields) {
     if (!dataset[field]) {
