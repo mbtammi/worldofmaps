@@ -1,7 +1,22 @@
 // Centralized logging utility
 // In production, sensitive logs are suppressed to prevent answer spoilers
 
-const isDevelopment = import.meta.env.MODE === 'development'
+// Safely detect environment. In Vite we have import.meta.env, in plain Node (scripts) we do not.
+let isDevelopment = (process.env.NODE_ENV || '').toLowerCase() === 'development'
+// Try Vite style environment if present
+if (typeof globalThis !== 'undefined') {
+  try {
+    // Some bundlers expose import.meta on modules; this file may still be ESM in build
+    // We access it indirectly to avoid parse errors in plain Node.
+    // eslint-disable-next-line no-eval
+    const meta = eval('import.meta')
+    if (meta && meta.env && typeof meta.env.MODE === 'string') {
+      isDevelopment = meta.env.MODE === 'development'
+    }
+  } catch (_) {
+    // Ignore if not available
+  }
+}
 
 // Dev-only logs (completely suppressed in production)
 export const devLog = (...args) => {

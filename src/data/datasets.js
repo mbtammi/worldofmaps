@@ -52,6 +52,9 @@ export const getAvailableDatasetTypes = () => {
   // For now, return static types plus some dynamic ones
   return [
     'population-density',
+    'land-area',
+    'languages-count',
+    'timezones-count',
     'gdp-per-capita',
     'life-expectancy',
     'co2-emissions',

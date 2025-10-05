@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
   
   try {
-    const { source, indicator, year = '2022' } = req.query
+  const { source, indicator, year = '2022' } = req.query
     
     if (!source || !indicator) {
       return res.status(400).json({ 
@@ -31,8 +31,9 @@ export default async function handler(req, res) {
     // Construct URL based on data source
     switch (source) {
       case 'worldbank':
-        const actualYear = year === 'latest' ? '2022' : year
-        url = `https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=300&date=${actualYear}`
+        // Support year ranges like 2019:2023
+        const requested = year === 'latest' ? `${new Date().getFullYear()-5}:${new Date().getFullYear()-1}` : year
+        url = `https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=2000&date=${requested}`
         break
         
       case 'owid':
@@ -90,8 +91,8 @@ export default async function handler(req, res) {
     
     // World Bank API handling
     if (source === 'worldbank') {
-      const actualYear = year === 'latest' ? '2022' : year
-      url = `https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=300&date=${actualYear}`
+      const requested = year === 'latest' ? `${new Date().getFullYear()-5}:${new Date().getFullYear()-1}` : year
+      url = `https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=2000&date=${requested}`
       
       console.log(`Fetching World Bank data from: ${url}`)
       
@@ -119,9 +120,9 @@ export default async function handler(req, res) {
         success: true,
         source: 'worldbank',
         indicator,
-        year: actualYear,
-        data: data[1], // The actual data array
-        metadata: data[0] // Metadata about the request
+        year: requested,
+        data: data[1],
+        metadata: data[0]
       })
     }
     

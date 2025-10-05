@@ -10,6 +10,7 @@ import populationDensityDataset from './populationDensity.js'
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 const CACHE_KEY_PREFIX = 'worldofmaps_data_'
 const MIN_COUNTRIES_REQUIRED = 60
+const WORLD_BANK_YEAR_WINDOW = 5 // years back to look for latest non-null
 const REQUIRED_COUNTRIES = [] // Disabled for now
 
 // Storage shim for non-browser/test environments
@@ -77,32 +78,47 @@ async function ensureRequiredCountriesWorldBank(indicator, year, data) {
   return additions.length ? [...data, ...additions] : data
 }
 
-export async function fetchWorldBankData(indicator, year = 2022) {
-  const actualYear = year === 'latest' ? 2022 : year
-  const cacheKey = `wb_${indicator}_${actualYear}`
+export async function fetchWorldBankData(indicator, year = 'latest') {
+  const targetYear = (year === 'latest' ? new Date().getFullYear() - 1 : year) // last complete year
+  const rangeStart = targetYear - (WORLD_BANK_YEAR_WINDOW - 1)
+  const yearRange = `${rangeStart}:${targetYear}`
+  const cacheKey = `wb_${indicator}_${yearRange}`
   const cached = getCachedData(cacheKey)
   if (cached) return cached
   try {
     const isDevelopment = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     if (!isDevelopment) {
-      const url = `/api/fetchData?source=worldbank&indicator=${indicator}&year=${actualYear}`
+      const url = `/api/fetchData?source=worldbank&indicator=${indicator}&year=${encodeURIComponent(yearRange)}`
       const response = await fetch(url)
       if (!response.ok) throw new Error(`Proxy API error: ${response.status}`)
       const proxyResponse = await response.json()
       if (!proxyResponse.success) throw new Error(proxyResponse.error || 'Proxy API returned error')
       const raw = proxyResponse.data
       if (!Array.isArray(raw)) throw new Error('Invalid World Bank data format')
-      const processed = raw
-        .filter(item => item && item.value != null && item.country && item.country.value && item.countryiso3code)
-        .map(item => ({
-          iso_a2: item.countryiso3code?.slice(0,2) || item.country?.id?.slice(0,2),
-          iso_a3: item.countryiso3code,
-          name: item.country.value,
+      // Build latest non-null per country within window
+      const byCountry = new Map()
+      for (const item of raw) {
+        if (!item || item.value == null || !item.countryiso3code || !item.country?.value) continue
+        const iso3 = item.countryiso3code
+        const yr = parseInt(item.date, 10)
+        if (isNaN(yr)) continue
+        if (yr < rangeStart || yr > targetYear) continue
+        const current = byCountry.get(iso3)
+        if (!current || yr > current.year) {
+          byCountry.set(iso3, {
+            iso_a2: iso3.slice(0,2),
+            iso_a3: iso3,
+            name: item.country.value,
             value: parseFloat(item.value),
-          year: item.date
-        }))
-        .filter(item => item.iso_a2 && item.iso_a3 && item.name && !isNaN(item.value) && item.value > 0)
-      const augmented = await ensureRequiredCountriesWorldBank(indicator, actualYear, processed)
+            year: yr
+          })
+        }
+      }
+      const processed = [...byCountry.values()].filter(d => d.name && !isNaN(d.value) && d.value !== 0)
+      if (!processed.find(c => c.iso_a3 === 'USA')) {
+        console.warn(`⚠️ USA missing for indicator ${indicator} in year range ${yearRange}`)
+      }
+      const augmented = await ensureRequiredCountriesWorldBank(indicator, targetYear, processed)
       setCachedData(cacheKey, augmented)
       return augmented
     } else {
@@ -112,6 +128,54 @@ export async function fetchWorldBankData(indicator, year = 2022) {
     console.error('Error fetching World Bank data:', e)
     throw e
   }
+}
+
+// REST Countries fetch (single bulk call then derive multiple datasets)
+let restCountriesCache = null
+async function fetchRestCountriesBase() {
+  if (restCountriesCache) return restCountriesCache
+  try {
+    const resp = await fetch(`${DATA_SOURCES.REST_COUNTRIES.baseUrl}/all?fields=name,cca2,cca3,area,languages,timezones,population`)
+    if (!resp.ok) throw new Error(`REST Countries HTTP ${resp.status}`)
+    const json = await resp.json()
+    if (!Array.isArray(json)) throw new Error('Invalid REST Countries response')
+    restCountriesCache = json
+    return json
+  } catch (e) {
+    console.error('Failed to fetch REST Countries base data:', e)
+    return []
+  }
+}
+
+async function buildRestCountriesDataset(kind) {
+  const base = await fetchRestCountriesBase()
+  const data = []
+  for (const c of base) {
+    if (!c || !c.cca3 || !c.name?.common) continue
+    let value = null
+    switch (kind) {
+      case 'land-area':
+        value = typeof c.area === 'number' ? c.area : null
+        break
+      case 'languages-count':
+        value = c.languages ? Object.keys(c.languages).length : null
+        break
+      case 'timezones-count':
+        value = Array.isArray(c.timezones) ? c.timezones.length : null
+        break
+      default:
+        return null
+    }
+    if (value == null || isNaN(value) || value === 0) continue
+    data.push({
+      iso_a2: c.cca2,
+      iso_a3: c.cca3,
+      name: c.name.common,
+      value: value,
+      year: new Date().getFullYear()
+    })
+  }
+  return data
 }
 
 // Fetch data from Our World in Data
@@ -277,6 +341,21 @@ export function generateDatasetMetadata(datasetId, data, source, dayIndex = null
       title: 'Life Expectancy',
       description: 'Average number of years a person is expected to live',
       correctAnswers: ['life expectancy', 'lifespan', 'longevity', 'average lifespan']
+    },
+    'land-area': {
+      title: 'Land Area',
+      description: 'Total land area in square kilometers by country',
+      correctAnswers: ['land area', 'area', 'surface area', 'territorial area']
+    },
+    'languages-count': {
+      title: 'Number of Languages',
+      description: 'Count of officially recognized languages per country',
+      correctAnswers: ['languages', 'number of languages', 'official languages', 'language count']
+    },
+    'timezones-count': {
+      title: 'Number of Timezones',
+      description: 'Count of time zones observed within each country',
+      correctAnswers: ['timezones', 'time zones', 'number of timezones', 'timezone count']
     }
     // Remaining dataset IDs auto-generate fun facts
   }
@@ -391,6 +470,22 @@ export async function fetchDataset(datasetId, dayIndex = null) {
       } catch (error) {
         datasetAttempts.push(`❌ World Bank: ${error.message}`)
         console.warn(`Failed to fetch ${datasetId} from World Bank:`, error.message)
+      }
+    }
+
+    // REST Countries special datasets (not in World Bank / OWID)
+    if (!data && ['land-area', 'languages-count', 'timezones-count'].includes(datasetId)) {
+      try {
+        devLog(`🗺️ Trying REST Countries for ${datasetId}...`)
+        data = await buildRestCountriesDataset(datasetId)
+        source = DATA_SOURCES.REST_COUNTRIES.attribution
+        if (data && data.length) {
+          datasetAttempts.push(`✅ REST Countries: ${data.length} countries`)
+          devLog(`✓ Fetched ${datasetId} from REST Countries: ${data.length} countries`)
+        }
+      } catch (e) {
+        datasetAttempts.push(`❌ REST Countries: ${e.message}`)
+        console.warn(`Failed to fetch ${datasetId} from REST Countries:`, e.message)
       }
     }
     
