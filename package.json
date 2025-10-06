@@ -12,7 +12,8 @@
     "schedule": "node scripts/view-dataset-schedule.js",
     "schedule:past": "node scripts/view-dataset-schedule.js -7",
     "schedule:month": "node scripts/view-dataset-schedule.js 30",
-    "verify:rotation": "node scripts/verify-rotation.js"
+    "verify:rotation": "node scripts/verify-rotation.js",
+    "datasets:list": "node scripts/list-datasets.js"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",

@@ -84,38 +84,116 @@ export function getCurrentDayIndex() {
   return cycleIndex
 }
 
-// Get the dataset ID for a specific day
-// Uses a shuffled rotation system to ensure no duplicates within pool size
+// Featured dataset weighting configuration (can be tuned)
+const WEIGHTING_CONFIG = {
+  ENABLED: (typeof process !== 'undefined' && process.env.WOM_WEIGHTED_ROTATION === 'true') || true, // default on; override with env
+  FEATURED_FRACTION: 0.7, // 70% of days from the featured pool
+  // Curated high-approachability / broad-interest datasets (keep list modest)
+  FEATURED_DATASETS: [
+    'population-density',
+    'gdp-per-capita',
+    'life-expectancy',
+    'internet-users',
+    'forest-coverage',
+    'unemployment-rate',
+    'renewable-energy',
+    'urban-population',
+    'literacy-rate',
+    'electricity-access',
+    'co2-emissions',
+    'healthcare-expenditure',
+    'education-expenditure',
+    'birth-rate',
+    'death-rate'
+  ]
+}
+
+// Get the dataset ID for a specific day with optional weighted rotation logic
 function getDatasetForDay(dayIndex) {
   const availableDatasets = getAllAvailableDatasets()
-  
-  // Filter to high and medium availability datasets for daily challenges
-  const suitableDatasets = availableDatasets.filter(dataset => 
-    dataset.estimatedAvailability === 'high' || dataset.estimatedAvailability === 'medium'
-  )
-  
+  const suitableDatasets = availableDatasets.filter(d => d.estimatedAvailability === 'high' || d.estimatedAvailability === 'medium')
+
   if (suitableDatasets.length === 0) {
     warnLog('No suitable datasets found, using fallback')
     return CHALLENGE_CONFIG.FALLBACK_DATASETS[dayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
   }
-  
-  const poolSize = suitableDatasets.length
-  
-  // Determine which "cycle" we're in (each cycle = poolSize days)
-  const cycleNumber = Math.floor(dayIndex / poolSize)
-  const positionInCycle = dayIndex % poolSize
-  
-  // Create a deterministic shuffle for this cycle
-  // Different cycle numbers produce different shuffles
-  const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
-  const shuffledDatasets = seededShuffle(suitableDatasets, shuffleSeed)
-  
-  // Pick the dataset at this position in the shuffled cycle
-  const selectedDataset = shuffledDatasets[positionInCycle]
-  
-  devLog(`Day ${dayIndex}: cycle ${cycleNumber}, position ${positionInCycle}/${poolSize}, dataset: ${selectedDataset.id}`)
-  
-  return selectedDataset.id
+
+  if (!WEIGHTING_CONFIG.ENABLED) {
+    // Fallback to original full-pool deterministic cycle behavior
+    const poolSize = suitableDatasets.length
+    const cycleNumber = Math.floor(dayIndex / poolSize)
+    const positionInCycle = dayIndex % poolSize
+    const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
+    const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
+    const chosen = shuffled[positionInCycle]
+    devLog(`(Unweighted) Day ${dayIndex}: cycle ${cycleNumber}, pos ${positionInCycle}/${poolSize}, dataset: ${chosen.id}`)
+    return chosen.id
+  }
+
+  // Build featured vs exploratory pools
+  const featuredSet = new Set(WEIGHTING_CONFIG.FEATURED_DATASETS)
+  const featuredPool = []
+  const exploratoryPool = []
+
+  for (const ds of suitableDatasets) {
+    if (featuredSet.has(ds.id)) featuredPool.push(ds)
+    else exploratoryPool.push(ds)
+  }
+
+  if (featuredPool.length === 0 || exploratoryPool.length === 0) {
+    // Degenerate case - revert to unweighted deterministic behavior
+    const poolSize = suitableDatasets.length
+    const cycleNumber = Math.floor(dayIndex / poolSize)
+    const positionInCycle = dayIndex % poolSize
+    const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
+    const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
+    const chosen = shuffled[positionInCycle]
+    devLog(`(Fallback-unweighted) Day ${dayIndex}: dataset ${chosen.id}`)
+    return chosen.id
+  }
+
+  // Determine weighting window size.
+  // Strategy: create a deterministic pattern list for each mega-cycle consisting of weighted ratio distribution.
+  const totalPool = suitableDatasets.length
+  const featuredTargetCount = Math.max(1, Math.round(totalPool * WEIGHTING_CONFIG.FEATURED_FRACTION))
+  const exploratoryTargetCount = Math.max(1, totalPool - featuredTargetCount)
+
+  // Deterministic shuffles per cycle for each pool
+  const cycleNumber = Math.floor(dayIndex / totalPool)
+  const seedBase = `${CHALLENGE_CONFIG.RANDOM_SEED}_wcycle${cycleNumber}`
+  const shuffledFeatured = seededShuffle(featuredPool, seedBase + '_F')
+  const shuffledExploratory = seededShuffle(exploratoryPool, seedBase + '_E')
+
+  // Interleave featured and exploratory preserving approximate ratio.
+  const pattern = []
+  let fIndex = 0, eIndex = 0
+  // Use running proportion algorithm
+  let fPlaced = 0, ePlaced = 0
+  while ((fPlaced < featuredTargetCount || ePlaced < exploratoryTargetCount) && pattern.length < totalPool) {
+    const fNeed = fPlaced / featuredTargetCount
+    const eNeed = ePlaced / exploratoryTargetCount
+    // Choose the pool with lower relative fill fraction
+    if ((fNeed <= eNeed && fPlaced < featuredTargetCount) || ePlaced >= exploratoryTargetCount) {
+      pattern.push(shuffledFeatured[fIndex % shuffledFeatured.length])
+      fIndex++; fPlaced++
+    } else {
+      pattern.push(shuffledExploratory[eIndex % shuffledExploratory.length])
+      eIndex++; ePlaced++
+    }
+  }
+
+  // Append any leftovers deterministically
+  while (pattern.length < totalPool && fIndex < shuffledFeatured.length) {
+    pattern.push(shuffledFeatured[fIndex++])
+  }
+  while (pattern.length < totalPool && eIndex < shuffledExploratory.length) {
+    pattern.push(shuffledExploratory[eIndex++])
+  }
+
+  const positionInCycle = dayIndex % totalPool
+  const selected = pattern[positionInCycle]
+  devLog(`(Weighted 70/30) Day ${dayIndex}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featured=${featuredTargetCount}, exploratory=${exploratoryTargetCount}, dataset=${selected.id}`)
+  return selected.id
 }
 
 // Get today's dataset
