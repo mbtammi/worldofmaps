@@ -35,6 +35,17 @@ function Landing() {
             >
               Play Today's Challenge
             </button>
+            <div style={{ marginTop: '1.5rem' }}>
+              <a href="https://launchigniter.com/product/world-of-maps?ref=badge-world-of-maps" target="_blank" rel="noopener noreferrer">
+                <img 
+                  src="https://launchigniter.com/api/badge/world-of-maps?theme=dark" 
+                  alt="Featured on LaunchIgniter" 
+                  width="212" 
+                  height="55" 
+                  style={{ border: 'none', display: 'block', margin: '0 auto' }}
+                />
+              </a>
+            </div>
           </div>
         </section>
         
