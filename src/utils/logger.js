@@ -1,21 +1,25 @@
 // Centralized logging utility
 // In production, sensitive logs are suppressed to prevent answer spoilers
 
-// Safely detect environment. In Vite we have import.meta.env, in plain Node (scripts) we do not.
-let isDevelopment = (process.env.NODE_ENV || '').toLowerCase() === 'development'
-// Try Vite style environment if present
-if (typeof globalThis !== 'undefined') {
-  try {
-    // Some bundlers expose import.meta on modules; this file may still be ESM in build
-    // We access it indirectly to avoid parse errors in plain Node.
-    // eslint-disable-next-line no-eval
-    const meta = eval('import.meta')
-    if (meta && meta.env && typeof meta.env.MODE === 'string') {
-      isDevelopment = meta.env.MODE === 'development'
+// Detect environment without using eval for safer bundling/minification.
+// Priority: explicit process.env override -> Vite import.meta.env (if present) -> default prod
+let isDevelopment = (process.env && (process.env.NODE_ENV || process.env.MODE))
+  ? (process.env.NODE_ENV || process.env.MODE).toLowerCase() === 'development'
+  : false
+
+// Attempt to read import.meta.env safely (only works when this file is truly ESM in a compatible bundler)
+// We use a Function constructor with a guarded return; this still avoids arbitrary eval of user data.
+// If bundler strips or rewrites it, fallback remains stable.
+try {
+  // eslint-disable-next-line no-new-func
+  const importMeta = new Function('try { return import.meta } catch { return null }')()
+  if (importMeta && importMeta.env && typeof importMeta.env.MODE === 'string') {
+    if (!process.env.NODE_ENV) { // Don't override explicit process value
+      isDevelopment = importMeta.env.MODE === 'development'
     }
-  } catch (_) {
-    // Ignore if not available
   }
+} catch (_) {
+  // Silent fallback
 }
 
 // Dev-only logs (completely suppressed in production)

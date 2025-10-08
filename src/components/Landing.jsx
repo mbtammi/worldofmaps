@@ -22,9 +22,9 @@ function Landing() {
         {/* Hero Section */}
         <section className="landing-hero">
           <div className="landing-hero-content">
-            <h1>Wordle, but for MAPS!</h1>
+            <h1>Daily Geography Game on a 3D Globe</h1>
             <p className="landing-hero-subtitle">
-              A daily geography puzzle game that challenges your knowledge of world data through beautiful 3D globe visualizations
+              Play a free daily geography & world data guessing game. Like GeoGuessr meets Wordle: identify real global datasets (GDP, population density, life expectancy, energy use, internet access and more) from an interactive 3D map.
             </p>
             <div className="games-counter">
               <span className="counter-text">Join <strong className="player-count-gradient">{playerCount}</strong> players worldwide!</span>
@@ -51,74 +51,74 @@ function Landing() {
         
         {/* Features Section */}
         <section className="landing-features">
-          <h2 className="landing-section-title">Why WorldOfTheMaps?</h2>
+          <h2 className="landing-section-title">Why Play This Geography & World Data Game?</h2>
           <p className="landing-section-subtitle">
-            Experience geography like never before with our immersive daily challenges
+            Learn real global statistics while having fun. Build geography literacy, spot global patterns, and challenge friends.
           </p>
           
           <div className="landing-features-grid">
             <div className="landing-feature-card">
               <span className="landing-feature-icon">🌍</span>
-              <h3>Interactive 3D Globe</h3>
-              <p>Explore world data on a beautiful, rotating 3D globe with smooth controls and stunning visuals</p>
+              <h3>Interactive 3D Globe Visualization</h3>
+              <p>Explore authentic world datasets on a smooth, rotating globe. Visual patterns teach economic, demographic, health and environmental trends.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">🎯</span>
-              <h3>Daily Challenge</h3>
-              <p>New mystery dataset every day - population, GDP, climate data and more. Never run out of puzzles!</p>
+              <h3>Daily Geography Challenge</h3>
+              <p>Fresh mystery dataset every day: population density, GDP per capita, forest coverage, renewable energy, literacy rate, healthcare spending and more.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">💡</span>
-              <h3>Smart Hints</h3>
-              <p>Optional progressive hints help you learn. Enable them in settings to get contextual clues as you play</p>
+              <h3>Progressive Learning Hints</h3>
+              <p>Optional contextual hints reinforce geography and data literacy without spoiling the answer.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">📊</span>
-              <h3>Track Progress</h3>
-              <p>Monitor your win rate, average guesses, and streaks. See how your geography knowledge improves!</p>
+              <h3>Track Performance & Streaks</h3>
+              <p>Monitor win rate, guess efficiency and solving streaks. See your mastery of world statistics improve.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">🎨</span>
-              <h3>Beautiful Themes</h3>
-              <p>Choose from Dark, Light, or Color modes. Each theme transforms the entire globe experience</p>
+              <h3>Accessible Visual Themes</h3>
+              <p>Light, dark and color-rich modes designed for clarity and immersion on desktop & mobile.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">⚡</span>
-              <h3>Quick & Fun</h3>
-              <p>Each puzzle takes just 2-5 minutes. Perfect for your coffee break or daily brain training</p>
+              <h3>Fast, Brain-Friendly Sessions</h3>
+              <p>Each puzzle takes 2–5 minutes—perfect for daily learning, classrooms or competitive sharing.</p>
             </div>
           </div>
         </section>
 
         {/* How to Play */}
         <section className="landing-features">
-          <h2 className="landing-section-title">How to Play</h2>
+          <h2 className="landing-section-title">How to Play the Daily Geography Guessing Game</h2>
           <p className="landing-section-subtitle">
-            Simple rules, endless learning possibilities
+            Simple mechanics, high replay value: guess the dataset, learn the world.
           </p>
           
           <div className="landing-features-grid">
             <div className="landing-feature-card">
               <span className="landing-feature-icon">1️⃣</span>
-              <h3>Study the Map</h3>
-              <p>Look at the colors and patterns on the 3D globe. Each country is colored based on some data</p>
+              <h3>Study the World Map</h3>
+              <p>Observe color gradients and regional clusters. Are high values in wealthy nations? Coastal regions? Tropical zones? Pattern recognition is key.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">2️⃣</span>
-              <h3>Make Your Guess</h3>
-              <p>Choose from multiple options what data you think the map is showing. Population? GDP? Something else?</p>
+              <h3>Guess the Dataset</h3>
+              <p>Select the concept: population density, GDP per capita, internet usage, healthcare spending, energy metrics, demographics and more.</p>
             </div>
             
             <div className="landing-feature-card">
               <span className="landing-feature-icon">3️⃣</span>
-              <h3>Learn & Improve</h3>
-              <p>Wrong guess? Get hints and try again! Right guess? Celebrate and learn fun facts about the data</p>
+              <h3>Learn & Retain World Knowledge</h3>
+              <p>Each solved puzzle reveals a bite-sized fact and reinforces global awareness. Ideal for students, teachers, trivia fans and lifelong learners.</p>
             </div>
           </div>
         </section>
