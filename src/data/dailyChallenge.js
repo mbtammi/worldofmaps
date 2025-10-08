@@ -148,37 +148,52 @@ function getDatasetForDay(dayIndex) {
       devLog(`(Fallback-unweighted) Day ${idx}: dataset ${chosen.id}`)
       return chosen.id
     }
+    // New UNIQUE weighted permutation logic (no duplication):
+    // We create a single-cycle ordering that front-loads featured datasets roughly according to FEATURED_FRACTION
+    // but never repeats any dataset within that cycle.
     const totalPool = suitableDatasets.length
-    const featuredTargetCount = Math.max(1, Math.round(totalPool * WEIGHTING_CONFIG.FEATURED_FRACTION))
-    const exploratoryTargetCount = Math.max(1, totalPool - featuredTargetCount)
     const cycleNumber = Math.floor(idx / totalPool)
-    const seedBase = `${CHALLENGE_CONFIG.RANDOM_SEED}_wcycle${cycleNumber}`
+    const seedBase = `${CHALLENGE_CONFIG.RANDOM_SEED}_wperm${cycleNumber}`
     const shuffledFeatured = seededShuffle(featuredPool, seedBase + '_F')
     const shuffledExploratory = seededShuffle(exploratoryPool, seedBase + '_E')
     const pattern = []
-    let fIndex = 0, eIndex = 0
+    let fPtr = 0, ePtr = 0
     let fPlaced = 0, ePlaced = 0
-    while ((fPlaced < featuredTargetCount || ePlaced < exploratoryTargetCount) && pattern.length < totalPool) {
-      const fNeed = fPlaced / featuredTargetCount
-      const eNeed = ePlaced / exploratoryTargetCount
-      if ((fNeed <= eNeed && fPlaced < featuredTargetCount) || ePlaced >= exploratoryTargetCount) {
-        pattern.push(shuffledFeatured[fIndex % shuffledFeatured.length])
-        fIndex++; fPlaced++
+    const targetFrac = WEIGHTING_CONFIG.FEATURED_FRACTION
+    for (let pos = 0; pos < totalPool; pos++) {
+      // Expected featured count up to this position (1-based for expectation)
+      const expectedFeatured = Math.round((pos + 1) * targetFrac)
+      const canTakeFeatured = fPtr < shuffledFeatured.length
+      const canTakeExploratory = ePtr < shuffledExploratory.length
+      let takeFeatured = false
+      if (canTakeFeatured && canTakeExploratory) {
+        // If we are behind the expected featured count, take featured
+        if (fPlaced < expectedFeatured) takeFeatured = true
+        else takeFeatured = false
+      } else if (canTakeFeatured) {
+        takeFeatured = true
+      } else if (canTakeExploratory) {
+        takeFeatured = false
+      }
+      if (takeFeatured) {
+        pattern.push(shuffledFeatured[fPtr++])
+        fPlaced++
       } else {
-        pattern.push(shuffledExploratory[eIndex % shuffledExploratory.length])
-        eIndex++; ePlaced++
+        pattern.push(shuffledExploratory[ePtr++])
+        ePlaced++
       }
     }
-    while (pattern.length < totalPool && fIndex < shuffledFeatured.length) {
-      pattern.push(shuffledFeatured[fIndex++])
-    }
-    while (pattern.length < totalPool && eIndex < shuffledExploratory.length) {
-      pattern.push(shuffledExploratory[eIndex++])
+    // Sanity: ensure pattern length == totalPool & uniqueness
+    if (pattern.length !== totalPool || new Set(pattern.map(p=>p.id)).size !== totalPool) {
+      warnLog('Weighted permutation degeneracy detected; reverting to simple unified shuffle.')
+      const unified = seededShuffle(suitableDatasets, seedBase + '_fallback')
+      const positionInCycleFallback = idx % totalPool
+      return unified[positionInCycleFallback].id
     }
     const positionInCycle = idx % totalPool
-    const selected = pattern[positionInCycle]
-    devLog(`(Weighted 70/30) Day ${idx}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featured=${featuredTargetCount}, exploratory=${exploratoryTargetCount}, dataset=${selected.id}`)
-    return selected.id
+    const chosen = pattern[positionInCycle]
+    devLog(`(WeightedUnique) Day ${idx}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featuredPlaced=${fPlaced}, exploratoryPlaced=${ePlaced}, dataset=${chosen.id}`)
+    return chosen.id
   }
 
   // Prevent same dataset two days in a row
