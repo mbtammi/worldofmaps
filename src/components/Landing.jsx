@@ -6,7 +6,7 @@ import './Landing.css'
 
 function Landing() {
   const navigate = useNavigate();
-  const [playerCount, setPlayerCount] = useState('469+')
+  const [playerCount, setPlayerCount] = useState('501+')
 
   // Placeholder: in future fetch from an API or analytics aggregate
   useEffect(() => {
@@ -19,9 +19,11 @@ function Landing() {
       <Header />
       
       <main className="landing-main">
+        {/* Primary page H1 for SEO (already user-facing hero) */}
         {/* Hero Section */}
         <section className="landing-hero">
           <div className="landing-hero-content">
+            <img src="/favicon.svg" width="48" height="48" alt="World of Maps globe logo" className="landing-logo" />
             <h1>Daily Geography Game on a 3D Globe</h1>
             <p className="landing-hero-subtitle">
               Play a free daily geography & world data guessing game. Like GeoGuessr meets Wordle: identify real global datasets (GDP, population density, life expectancy, energy use, internet access and more) from an interactive 3D map.
@@ -49,6 +51,16 @@ function Landing() {
           </div>
         </section>
         
+        {/* Quick Internal Navigation (SEO crawl assist) */}
+        <nav className="landing-internal-nav" aria-label="Site sections">
+          <ul className="landing-internal-links">
+            <li><a href="/">Play Daily Game</a></li>
+            <li><a href="/play">Free Play Mode</a></li>
+            <li><a href="/how-to-play">How to Play</a></li>
+            <li><a href="/about">About</a></li>
+          </ul>
+        </nav>
+
         {/* Features Section */}
         <section className="landing-features">
           <h2 className="landing-section-title">Why Play This Geography & World Data Game?</h2>
@@ -123,6 +135,37 @@ function Landing() {
           </div>
         </section>
       </main>
+      {/* Lightweight FAQ structured data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What is World of Maps?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'World of Maps is a free daily geography and world data guessing game where you identify real global datasets visualized on a 3D globe.'
+            }
+          },
+          {
+            '@type': 'Question',
+            name: 'Is it similar to GeoGuessr or Wordle?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'It blends Wordle-style daily play with data-driven global visualization instead of location pinpointing like GeoGuessr.'
+            }
+          },
+          {
+            '@type': 'Question',
+            name: 'What datasets can I encounter?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Examples include population density, GDP per capita, life expectancy, internet users, renewable energy, literacy rate, forest coverage and more.'
+            }
+          }
+        ]
+      })}} />
       
       <Footer />
     </div>

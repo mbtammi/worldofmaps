@@ -3,9 +3,13 @@
 
 // Detect environment without using eval for safer bundling/minification.
 // Priority: explicit process.env override -> Vite import.meta.env (if present) -> default prod
-let isDevelopment = (process.env && (process.env.NODE_ENV || process.env.MODE))
-  ? (process.env.NODE_ENV || process.env.MODE).toLowerCase() === 'development'
-  : false
+let isDevelopment = false
+
+// Safe guard for process (undefined in browser unless polyfilled)
+if (typeof process !== 'undefined' && process?.env) {
+  const pMode = (process.env.NODE_ENV || process.env.MODE || '').toLowerCase()
+  if (pMode === 'development') isDevelopment = true
+}
 
 // Attempt to read import.meta.env safely (only works when this file is truly ESM in a compatible bundler)
 // We use a Function constructor with a guarded return; this still avoids arbitrary eval of user data.
@@ -13,9 +17,13 @@ let isDevelopment = (process.env && (process.env.NODE_ENV || process.env.MODE))
 try {
   // eslint-disable-next-line no-new-func
   const importMeta = new Function('try { return import.meta } catch { return null }')()
-  if (importMeta && importMeta.env && typeof importMeta.env.MODE === 'string') {
-    if (!process.env.NODE_ENV) { // Don't override explicit process value
-      isDevelopment = importMeta.env.MODE === 'development'
+  if (importMeta && importMeta.env) {
+    // Respect explicit process env if already set to dev
+    if (!isDevelopment) {
+      if (importMeta.env.DEV === true) isDevelopment = true
+      else if (typeof importMeta.env.MODE === 'string' && importMeta.env.MODE === 'development') {
+        isDevelopment = true
+      }
     }
   }
 } catch (_) {

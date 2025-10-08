@@ -35,6 +35,21 @@ function DailyGame() {
   // Hints removed
   const [showWinToast, setShowWinToast] = useState(false)
 
+  // Visually hidden heading style (scoped) for SEO semantic structure without layout impact
+  const HiddenHeading = () => (
+    <h1 style={{
+      position: 'absolute',
+      width: '1px',
+      height: '1px',
+      padding: 0,
+      margin: '-1px',
+      overflow: 'hidden',
+      clip: 'rect(0 0 0 0)',
+      whiteSpace: 'nowrap',
+      border: 0
+    }}>Daily Geography & World Data Guessing Game</h1>
+  )
+
   // Initialize theme on mount
   useEffect(() => {
     const theme = initializeTheme()
@@ -116,6 +131,20 @@ function DailyGame() {
     
     initializeGame()
   }, [])
+
+  // Lightweight, low-contrast keyword support block for crawlers (kept out of main visual flow)
+  const KeywordSupport = () => (
+    <div aria-hidden="true" style={{
+      position: 'absolute',
+      left: '-9999px',
+      top: 'auto',
+      width: '1px',
+      height: '1px',
+      overflow: 'hidden'
+    }}>
+      Geography game daily challenge. World data quiz: population density, GDP per capita, life expectancy, forest coverage, renewable energy, internet users, global statistics puzzle.
+    </div>
+  )
 
   // Lazy-load stats and global averages after first paint / idle
   useEffect(() => {
