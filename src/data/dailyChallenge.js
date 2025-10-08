@@ -118,82 +118,85 @@ function getDatasetForDay(dayIndex) {
     return CHALLENGE_CONFIG.FALLBACK_DATASETS[dayIndex % CHALLENGE_CONFIG.FALLBACK_DATASETS.length]
   }
 
-  if (!WEIGHTING_CONFIG.ENABLED) {
-    // Fallback to original full-pool deterministic cycle behavior
-    const poolSize = suitableDatasets.length
-    const cycleNumber = Math.floor(dayIndex / poolSize)
-    const positionInCycle = dayIndex % poolSize
-    const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
-    const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
-    const chosen = shuffled[positionInCycle]
-    devLog(`(Unweighted) Day ${dayIndex}: cycle ${cycleNumber}, pos ${positionInCycle}/${poolSize}, dataset: ${chosen.id}`)
-    return chosen.id
-  }
-
-  // Build featured vs exploratory pools
-  const featuredSet = new Set(WEIGHTING_CONFIG.FEATURED_DATASETS)
-  const featuredPool = []
-  const exploratoryPool = []
-
-  for (const ds of suitableDatasets) {
-    if (featuredSet.has(ds.id)) featuredPool.push(ds)
-    else exploratoryPool.push(ds)
-  }
-
-  if (featuredPool.length === 0 || exploratoryPool.length === 0) {
-    // Degenerate case - revert to unweighted deterministic behavior
-    const poolSize = suitableDatasets.length
-    const cycleNumber = Math.floor(dayIndex / poolSize)
-    const positionInCycle = dayIndex % poolSize
-    const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
-    const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
-    const chosen = shuffled[positionInCycle]
-    devLog(`(Fallback-unweighted) Day ${dayIndex}: dataset ${chosen.id}`)
-    return chosen.id
-  }
-
-  // Determine weighting window size.
-  // Strategy: create a deterministic pattern list for each mega-cycle consisting of weighted ratio distribution.
-  const totalPool = suitableDatasets.length
-  const featuredTargetCount = Math.max(1, Math.round(totalPool * WEIGHTING_CONFIG.FEATURED_FRACTION))
-  const exploratoryTargetCount = Math.max(1, totalPool - featuredTargetCount)
-
-  // Deterministic shuffles per cycle for each pool
-  const cycleNumber = Math.floor(dayIndex / totalPool)
-  const seedBase = `${CHALLENGE_CONFIG.RANDOM_SEED}_wcycle${cycleNumber}`
-  const shuffledFeatured = seededShuffle(featuredPool, seedBase + '_F')
-  const shuffledExploratory = seededShuffle(exploratoryPool, seedBase + '_E')
-
-  // Interleave featured and exploratory preserving approximate ratio.
-  const pattern = []
-  let fIndex = 0, eIndex = 0
-  // Use running proportion algorithm
-  let fPlaced = 0, ePlaced = 0
-  while ((fPlaced < featuredTargetCount || ePlaced < exploratoryTargetCount) && pattern.length < totalPool) {
-    const fNeed = fPlaced / featuredTargetCount
-    const eNeed = ePlaced / exploratoryTargetCount
-    // Choose the pool with lower relative fill fraction
-    if ((fNeed <= eNeed && fPlaced < featuredTargetCount) || ePlaced >= exploratoryTargetCount) {
-      pattern.push(shuffledFeatured[fIndex % shuffledFeatured.length])
-      fIndex++; fPlaced++
-    } else {
-      pattern.push(shuffledExploratory[eIndex % shuffledExploratory.length])
-      eIndex++; ePlaced++
+  // Helper to get the dataset for a given day index (original logic)
+  function _getDatasetForDayIndex(idx) {
+    if (!WEIGHTING_CONFIG.ENABLED) {
+      const poolSize = suitableDatasets.length
+      const cycleNumber = Math.floor(idx / poolSize)
+      const positionInCycle = idx % poolSize
+      const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
+      const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
+      const chosen = shuffled[positionInCycle]
+      devLog(`(Unweighted) Day ${idx}: cycle ${cycleNumber}, pos ${positionInCycle}/${poolSize}, dataset: ${chosen.id}`)
+      return chosen.id
     }
+
+    const featuredSet = new Set(WEIGHTING_CONFIG.FEATURED_DATASETS)
+    const featuredPool = []
+    const exploratoryPool = []
+    for (const ds of suitableDatasets) {
+      if (featuredSet.has(ds.id)) featuredPool.push(ds)
+      else exploratoryPool.push(ds)
+    }
+    if (featuredPool.length === 0 || exploratoryPool.length === 0) {
+      const poolSize = suitableDatasets.length
+      const cycleNumber = Math.floor(idx / poolSize)
+      const positionInCycle = idx % poolSize
+      const shuffleSeed = `${CHALLENGE_CONFIG.RANDOM_SEED}_cycle${cycleNumber}`
+      const shuffled = seededShuffle(suitableDatasets, shuffleSeed)
+      const chosen = shuffled[positionInCycle]
+      devLog(`(Fallback-unweighted) Day ${idx}: dataset ${chosen.id}`)
+      return chosen.id
+    }
+    const totalPool = suitableDatasets.length
+    const featuredTargetCount = Math.max(1, Math.round(totalPool * WEIGHTING_CONFIG.FEATURED_FRACTION))
+    const exploratoryTargetCount = Math.max(1, totalPool - featuredTargetCount)
+    const cycleNumber = Math.floor(idx / totalPool)
+    const seedBase = `${CHALLENGE_CONFIG.RANDOM_SEED}_wcycle${cycleNumber}`
+    const shuffledFeatured = seededShuffle(featuredPool, seedBase + '_F')
+    const shuffledExploratory = seededShuffle(exploratoryPool, seedBase + '_E')
+    const pattern = []
+    let fIndex = 0, eIndex = 0
+    let fPlaced = 0, ePlaced = 0
+    while ((fPlaced < featuredTargetCount || ePlaced < exploratoryTargetCount) && pattern.length < totalPool) {
+      const fNeed = fPlaced / featuredTargetCount
+      const eNeed = ePlaced / exploratoryTargetCount
+      if ((fNeed <= eNeed && fPlaced < featuredTargetCount) || ePlaced >= exploratoryTargetCount) {
+        pattern.push(shuffledFeatured[fIndex % shuffledFeatured.length])
+        fIndex++; fPlaced++
+      } else {
+        pattern.push(shuffledExploratory[eIndex % shuffledExploratory.length])
+        eIndex++; ePlaced++
+      }
+    }
+    while (pattern.length < totalPool && fIndex < shuffledFeatured.length) {
+      pattern.push(shuffledFeatured[fIndex++])
+    }
+    while (pattern.length < totalPool && eIndex < shuffledExploratory.length) {
+      pattern.push(shuffledExploratory[eIndex++])
+    }
+    const positionInCycle = idx % totalPool
+    const selected = pattern[positionInCycle]
+    devLog(`(Weighted 70/30) Day ${idx}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featured=${featuredTargetCount}, exploratory=${exploratoryTargetCount}, dataset=${selected.id}`)
+    return selected.id
   }
 
-  // Append any leftovers deterministically
-  while (pattern.length < totalPool && fIndex < shuffledFeatured.length) {
-    pattern.push(shuffledFeatured[fIndex++])
+  // Prevent same dataset two days in a row
+  const todayId = _getDatasetForDayIndex(dayIndex)
+  const yesterdayId = _getDatasetForDayIndex(dayIndex - 1)
+  if (todayId === yesterdayId && suitableDatasets.length > 1) {
+    // Find the next dataset in the pattern that is not yesterday's
+    for (let offset = 1; offset < suitableDatasets.length; offset++) {
+      const altId = _getDatasetForDayIndex(dayIndex + offset)
+      if (altId !== yesterdayId) {
+        warnLog(`Prevented repeat: '${todayId}' was yesterday, using '${altId}' instead.`)
+        return altId
+      }
+    }
+    // Fallback: if all are the same (shouldn't happen), return todayId
+    return todayId
   }
-  while (pattern.length < totalPool && eIndex < shuffledExploratory.length) {
-    pattern.push(shuffledExploratory[eIndex++])
-  }
-
-  const positionInCycle = dayIndex % totalPool
-  const selected = pattern[positionInCycle]
-  devLog(`(Weighted 70/30) Day ${dayIndex}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featured=${featuredTargetCount}, exploratory=${exploratoryTargetCount}, dataset=${selected.id}`)
-  return selected.id
+  return todayId
 }
 
 // Get today's dataset

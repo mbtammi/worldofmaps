@@ -9,93 +9,10 @@
  *   node scripts/view-dataset-schedule.js -7       # Show last 7 days
  */
 
-// Simplified version of the rotation logic
-const DATASET_CATEGORIES = {
-  DEMOGRAPHICS: ['population-density', 'population-total', 'population-growth', 'urban-population', 'population-ages-65', 'population-ages-0-14', 'life-expectancy', 'birth-rate', 'death-rate', 'fertility-rate', 'infant-mortality'],
-  ECONOMY: ['gdp-per-capita', 'gdp-total', 'gdp-growth', 'gni-per-capita', 'unemployment-rate', 'inflation-rate', 'exports-goods-services', 'imports-goods-services', 'foreign-investment', 'government-expenditure', 'tax-revenue', 'gross-savings', 'manufacturing-value', 'agriculture-value'],
-  HEALTH: ['healthcare-expenditure', 'hospital-beds', 'physicians-density', 'nurses-midwives', 'immunization-dpt', 'immunization-measles', 'maternal-mortality', 'tuberculosis-incidence'],
-  EDUCATION: ['literacy-rate', 'literacy-rate-youth', 'education-expenditure', 'secondary-enrollment', 'tertiary-enrollment'],
-  TECHNOLOGY: ['internet-users', 'mobile-subscriptions', 'fixed-broadband', 'telephone-lines'],
-  INFRASTRUCTURE: ['electricity-access', 'electricity-consumption', 'water-access', 'sanitation-access', 'roads-paved', 'rail-lines', 'air-passengers'],
-  ENVIRONMENT: ['forest-coverage', 'energy-consumption', 'renewable-energy', 'methane-emissions', 'energy-imports', 'fossil-fuel-consumption'],
-  CULTURE: ['coffee-consumption', 'alcohol-consumption']
-}
 
-const highAvailability = [
-  'population-density', 'population-total', 'population-growth', 'urban-population',
-  'population-ages-65', 'population-ages-0-14', 'life-expectancy', 'birth-rate',
-  'death-rate', 'fertility-rate', 'infant-mortality',
-  'gdp-per-capita', 'gdp-total', 'gdp-growth', 'gni-per-capita', 'unemployment-rate',
-  'inflation-rate', 'exports-goods-services', 'imports-goods-services',
-  'foreign-investment', 'government-expenditure', 'tax-revenue', 'gross-savings',
-  'manufacturing-value', 'agriculture-value',
-  'healthcare-expenditure', 'hospital-beds', 'physicians-density', 'nurses-midwives',
-  'immunization-dpt', 'immunization-measles', 'maternal-mortality', 'tuberculosis-incidence',
-  'literacy-rate', 'literacy-rate-youth', 'education-expenditure',
-  'secondary-enrollment', 'tertiary-enrollment',
-  'internet-users', 'mobile-subscriptions', 'fixed-broadband', 'telephone-lines',
-  'electricity-access', 'electricity-consumption', 'water-access', 'sanitation-access',
-  'roads-paved', 'rail-lines', 'air-passengers',
-  'forest-coverage', 'energy-consumption', 'renewable-energy', 'methane-emissions',
-  'energy-imports', 'fossil-fuel-consumption'
-]
-
-const mediumAvailability = ['coffee-consumption', 'alcohol-consumption']
-
-function getAllDatasets() {
-  const all = []
-  Object.entries(DATASET_CATEGORIES).forEach(([category, datasets]) => {
-    datasets.forEach(id => {
-      const avail = highAvailability.includes(id) ? 'high' : 
-                    mediumAvailability.includes(id) ? 'medium' : 'low'
-      all.push({ id, category, availability: avail })
-    })
-  })
-  return all.filter(d => d.availability === 'high' || d.availability === 'medium')
-}
-
-function seededRandom(seed) {
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i)
-    hash = hash & hash
-  }
-  return function() {
-    hash = ((hash * 1103515245) + 12345) & 0x7fffffff
-    return hash / 0x7fffffff
-  }
-}
-
-function seededShuffle(array, seed) {
-  const shuffled = [...array]
-  const rng = seededRandom(seed)
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
-}
-
-function getCurrentDayIndex() {
-  const MS_PER_HOUR = 60 * 60 * 1000
-  const MS_PER_DAY = 24 * MS_PER_HOUR
-  const RESET_HOUR_UTC = 5
-  const nowUtcMs = Date.now()
-  const shifted = nowUtcMs - (RESET_HOUR_UTC * MS_PER_HOUR)
-  const rawIndex = Math.floor(shifted / MS_PER_DAY)
-  const CYCLE_LENGTH_DAYS = 365
-  return ((rawIndex % CYCLE_LENGTH_DAYS) + CYCLE_LENGTH_DAYS) % CYCLE_LENGTH_DAYS
-}
-
-function getDatasetForDay(dayIndex) {
-  const suitableDatasets = getAllDatasets()
-  const poolSize = suitableDatasets.length
-  const cycleNumber = Math.floor(dayIndex / poolSize)
-  const positionInCycle = dayIndex % poolSize
-  const shuffleSeed = `worldofmaps2025_cycle${cycleNumber}`
-  const shuffledDatasets = seededShuffle(suitableDatasets, shuffleSeed)
-  return shuffledDatasets[positionInCycle]
-}
+// Use the real dailyChallenge.js logic
+import { getUpcomingDatasets, getDatasetHistory, getCurrentDayIndex } from '../src/data/dailyChallenge.js'
+import { getAllAvailableDatasets } from '../src/data/dataSources.js'
 
 function getCategoryIcon(category) {
   const icons = {
@@ -111,41 +28,66 @@ function getCategoryIcon(category) {
   return icons[category] || '📊'
 }
 
+
 // Main
 const days = parseInt(process.argv[2] || '7')
-const currentDay = getCurrentDayIndex()
-const suitableDatasets = getAllDatasets()
-const poolSize = suitableDatasets.length
+const absDays = Math.abs(days)
+const allMeta = getAllAvailableDatasets()
+const metaMap = new Map(allMeta.map(m => [m.id, m]))
 
 console.log('\n🗓️  Dataset Schedule for World of Maps')
 console.log('═'.repeat(70))
-console.log(`📊 Total available datasets: ${poolSize}`)
-console.log(`📅 Current day index: ${currentDay}`)
-console.log(`🔄 Cycle: ${Math.floor(currentDay / poolSize)} (Position: ${currentDay % poolSize + 1}/${poolSize})`)
+console.log(`📊 Showing ${days < 0 ? 'past' : 'upcoming'} ${absDays} day(s)`) // clarify plural
 console.log('═'.repeat(70))
 
-const start = days < 0 ? currentDay + days : currentDay
-const end = days < 0 ? currentDay : currentDay + days
-
-console.log(`\n${days < 0 ? '📜 Past' : '🔮 Upcoming'} ${Math.abs(days)} Days:\n`)
-
 const seen = new Set()
-for (let i = start; i < end; i++) {
-  const dataset = getDatasetForDay(i)
-  const date = new Date()
-  const dayOffset = i - currentDay
-  date.setDate(date.getDate() + dayOffset)
-  
-  const dateStr = date.toISOString().split('T')[0]
-  const dayLabel = dayOffset === 0 ? '(TODAY)' : dayOffset === -1 ? '(Yesterday)' : dayOffset === 1 ? '(Tomorrow)' : ''
-  const icon = getCategoryIcon(dataset.category)
-  const isRepeat = seen.has(dataset.id) ? '🔁' : '✨'
-  
-  console.log(`${dateStr} ${dayLabel.padEnd(12)} ${icon} ${dataset.id.padEnd(30)} ${isRepeat}`)
-  seen.add(dataset.id)
+
+if (days >= 0) {
+  // Upcoming including today
+  const upcoming = getUpcomingDatasets(absDays)
+  for (const entry of upcoming) {
+    const dsMeta = metaMap.get(entry.datasetId) || {}
+    const icon = getCategoryIcon(resolveCategoryIconKey(dsMeta.category))
+    const isRepeat = seen.has(entry.datasetId) ? '🔁' : '✨'
+    const dayLabel = entry.isToday ? '(TODAY)' : ''
+    console.log(`${entry.date} ${dayLabel.padEnd(12)} ${icon} ${entry.datasetId.padEnd(32)} ${isRepeat}`)
+    seen.add(entry.datasetId)
+  }
+} else {
+  // Past days (exclude today by default) -> we ask history from (currentDay-absDays) to (currentDay-1)
+  const currentDay = getCurrentDayIndex()
+  const start = currentDay - absDays
+  const end = currentDay - 1
+  const history = getDatasetHistory(start, end)
+  for (const entry of history.history) {
+    const dsMeta = metaMap.get(entry.datasetId) || {}
+    const icon = getCategoryIcon(resolveCategoryIconKey(dsMeta.category))
+    const dayOffset = entry.dayIndex - currentDay
+    const isRepeat = seen.has(entry.datasetId) ? '🔁' : '✨'
+    const dayLabel = dayOffset === -1 ? '(Yesterday)' : ''
+    console.log(`${entry.date} ${dayLabel.padEnd(12)} ${icon} ${entry.datasetId.padEnd(32)} ${isRepeat}`)
+    seen.add(entry.datasetId)
+  }
 }
 
 console.log('\n' + '═'.repeat(70))
-console.log(`✨ = First occurrence  🔁 = Repeat from earlier in this period`)
-console.log(`\nℹ️  In each ${poolSize}-day cycle, all datasets appear exactly once.`)
+console.log('✨ = First occurrence  🔁 = Repeat from earlier in this listing window')
 console.log('\n')
+
+function resolveCategoryIconKey(categoryName) {
+  if (!categoryName) return undefined
+  // Map long category names back to keys used by icons
+  const mapping = {
+    'Demographics & Society': 'DEMOGRAPHICS',
+    'Economy & Development': 'ECONOMY',
+    'Environment & Climate': 'ENVIRONMENT',
+    'Technology & Innovation': 'TECHNOLOGY',
+    'Health & Wellbeing': 'HEALTH',
+    'Education & Knowledge': 'EDUCATION',
+    'Infrastructure & Transport': 'INFRASTRUCTURE',
+    'Culture & Lifestyle': 'CULTURE',
+    'Cultural & Structural Diversity': 'CULTURE',
+    'Expanded Indicators': 'ECONOMY'
+  }
+  return mapping[categoryName] || 'CULTURE'
+}
