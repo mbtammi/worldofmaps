@@ -43,7 +43,7 @@ export async function getFirebaseAdmin() {
   return adminInstance
 }
 
-export function getFirestore() {
-  const admin = getFirebaseAdmin()
-  return admin.firestore()
+export async function getFirestore() {
+  const admin = await getFirebaseAdmin();
+  return admin.firestore();
 }

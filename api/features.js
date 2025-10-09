@@ -29,8 +29,8 @@ export default async function handler(req, res) {
   });
 
   try {
-    const db = getFirestore();
-    const featuresRef = db.collection('featureRequests');
+  const db = await getFirestore();
+  const featuresRef = db.collection('featureRequests');
 
     // GET: List features with pagination
     if (req.method === 'GET') {
