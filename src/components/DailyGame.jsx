@@ -6,6 +6,8 @@ import { getLeaderboardData } from '../data/gameStats'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
+import FeatureRequestsModal from './FeatureRequestsModal'
+import { hasNewFeaturesRemote } from '../data/featureRequestsRemote'
 import './DailyGame.css'
 
 // Lazy load ShareSheet to improve initial page load performance
@@ -34,6 +36,20 @@ function DailyGame() {
   const [extremesLine, setExtremesLine] = useState(null)
   // Hints removed
   const [showWinToast, setShowWinToast] = useState(false)
+  const [featureModalOpen, setFeatureModalOpen] = useState(false)
+  const [featureHasNew, setFeatureHasNew] = useState(false)
+
+  useEffect(() => {
+    async function checkNewFeatures() {
+      try {
+        const hasNew = await hasNewFeaturesRemote()
+        setFeatureHasNew(hasNew)
+      } catch (error) {
+        console.warn('Failed to check for new features:', error)
+      }
+    }
+    checkNewFeatures()
+  }, [])
 
   // Visually hidden heading style (scoped) for SEO semantic structure without layout impact
   const HiddenHeading = () => (
@@ -490,6 +506,7 @@ function DailyGame() {
   }
 
   return (
+    <>
     <div className="daily-game">
       {/* Minimal mobile toast for win */}
       {showWinToast && (
@@ -532,8 +549,21 @@ function DailyGame() {
           {getAllThemes().find(t => t.id === currentTheme)?.icon || '🌙'}
         </button>
         <div className="menu-container">
-          <button className="control-btn" onClick={() => setShowMenu(!showMenu)}>
+          <button className="control-btn" onClick={() => { setShowMenu(!showMenu); }} style={{position:'relative'}}>
             ⋯
+            {featureHasNew && (
+              <span style={{
+                position:'absolute',
+                top:2,
+                right:3,
+                width:10,
+                height:10,
+                borderRadius:'50%',
+                background:'linear-gradient(135deg,#ff7a18,#ffca1a)',
+                boxShadow:'0 0 6px rgba(255,160,60,0.8)',
+                border:'1px solid rgba(255,255,255,0.7)'
+              }} aria-label="New feature requests available" />
+            )}
           </button>
           {showMenu && (
             <div className="dropdown-menu">
@@ -555,9 +585,13 @@ function DailyGame() {
               </button> */}
               <button 
                 className="menu-item" 
-                onClick={() => setShowMenu(false)}
+                onClick={() => { setFeatureModalOpen(true); setFeatureHasNew(false); setShowMenu(false); }}
               >
-                📊 Stats (Not yet...)
+                ❗ Feature Requests
+              </button>
+              <button
+                className="menu-item" >
+                📊 Stats (Waiting...)
               </button>
             </div>
           )}
@@ -688,6 +722,8 @@ function DailyGame() {
       </Suspense>
     )}
     </div>
+    <FeatureRequestsModal open={featureModalOpen} onClose={()=> setFeatureModalOpen(false)} />
+    </>
   )
 }
 

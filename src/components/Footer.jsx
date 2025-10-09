@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import FeatureRequestsModal from './FeatureRequestsModal';
 import './Footer.css';
 
 function Footer() {
   const navigate = useNavigate();
+  const [featureModalOpen, setFeatureModalOpen] = useState(false)
 
   const handleNavigation = (page) => {
     switch (page) {
@@ -52,9 +55,15 @@ function Footer() {
             >
               Contact
             </a>
+            <button
+              onClick={()=> setFeatureModalOpen(true)}
+              className="footer-link"
+              aria-label="Open feature requests modal"
+            >Suggest Features</button>
           </div>
         </div>
       </div>
+      <FeatureRequestsModal open={featureModalOpen} onClose={()=> setFeatureModalOpen(false)} />
     </footer>
   );
 }
