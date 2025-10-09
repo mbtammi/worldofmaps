@@ -6,7 +6,7 @@ import './Landing.css'
 
 function Landing() {
   const navigate = useNavigate();
-  const [playerCount, setPlayerCount] = useState('501+')
+  const [playerCount, setPlayerCount] = useState('769+')
 
   // Placeholder: in future fetch from an API or analytics aggregate
   useEffect(() => {
@@ -53,12 +53,24 @@ function Landing() {
         
         {/* Quick Internal Navigation (SEO crawl assist) */}
         <nav className="landing-internal-nav" aria-label="Site sections">
-          <ul className="landing-internal-links">
-            <li><a href="/">Play Daily Game</a></li>
-            <li><a href="/play">Free Play Mode</a></li>
-            <li><a href="/how-to-play">How to Play</a></li>
-            <li><a href="/about">About</a></li>
-          </ul>
+          <div className="landing-internal-container">
+            <a href="/" className="landing-internal-link">
+              <span className="internal-link-icon">🎯</span>
+              <span className="internal-link-text">Play Daily Game</span>
+            </a>
+            <a href="/play" className="landing-internal-link">
+              <span className="internal-link-icon">🎮</span>
+              <span className="internal-link-text">Free Play Mode</span>
+            </a>
+            <a href="/how-to-play" className="landing-internal-link">
+              <span className="internal-link-icon">❓</span>
+              <span className="internal-link-text">How to Play</span>
+            </a>
+            <a href="/about" className="landing-internal-link">
+              <span className="internal-link-icon">ℹ️</span>
+              <span className="internal-link-text">About</span>
+            </a>
+          </div>
         </nav>
 
         {/* Features Section */}
