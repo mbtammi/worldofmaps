@@ -8,10 +8,10 @@
 
 let adminInstance = null
 
-export function getFirebaseAdmin() {
+export async function getFirebaseAdmin() {
   if (adminInstance) return adminInstance
   // Lazy import to avoid bundling if not needed
-  const admin = require('firebase-admin')
+  const admin = (await import('firebase-admin')).default
 
   if (admin.apps && admin.apps.length) {
     adminInstance = admin
