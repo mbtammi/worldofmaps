@@ -42,14 +42,27 @@ export default async function handler(req, res) {
       const snapshot = await featuresRef.get();
       const total = snapshot.size;
 
-      // Get paginated results ordered by votes desc, then created desc
-      const query = featuresRef
-        .orderBy('votes', 'desc')
-        .orderBy('created', 'desc')
-        .limit(limit)
-        .offset(offset);
-
-      const paginatedSnapshot = await query.get();
+      // Try composite index query first, fallback to simple query if index not ready
+      let paginatedSnapshot;
+      try {
+        // Preferred: Order by votes desc, then created desc (requires composite index)
+        const query = featuresRef
+          .orderBy('votes', 'desc')
+          .orderBy('created', 'desc')
+          .limit(limit)
+          .offset(offset);
+        
+        paginatedSnapshot = await query.get();
+      } catch (indexError) {
+        console.warn('Composite index not ready, using simple query:', indexError.message);
+        // Fallback: Order by created desc only (no index required)
+        const fallbackQuery = featuresRef
+          .orderBy('created', 'desc')
+          .limit(limit)
+          .offset(offset);
+        
+        paginatedSnapshot = await fallbackQuery.get();
+      }
       const features = [];
       
       paginatedSnapshot.forEach(doc => {
@@ -62,6 +75,9 @@ export default async function handler(req, res) {
           created: data.created || Date.now()
         });
       });
+
+      // Ensure consistent sorting (especially for fallback query)
+      features.sort((a, b) => b.votes - a.votes || b.created - a.created);
 
       return res.status(200).json({
         features,
