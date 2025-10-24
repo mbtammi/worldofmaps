@@ -38,6 +38,8 @@ function DailyGame() {
   const [showWinToast, setShowWinToast] = useState(false)
   const [featureModalOpen, setFeatureModalOpen] = useState(false)
   const [featureHasNew, setFeatureHasNew] = useState(false)
+  const [loadingSlowWarning, setLoadingSlowWarning] = useState(false)
+  const [missedGuessToast, setMissedGuessToast] = useState(false)
 
   useEffect(() => {
     async function checkNewFeatures() {
@@ -93,9 +95,21 @@ function DailyGame() {
     const initializeGame = async () => {
       try {
         setLoading(true)
+        
+        // Set timeout to show slow loading warning after 15 seconds
+        const slowLoadTimer = setTimeout(() => {
+          if (loading) {
+            setLoadingSlowWarning(true)
+          }
+        }, 15000)
+        
         // Dev log removed - prevents answer spoilers in production
         
         const dataset = await getTodaysDataset()
+        
+        // Clear the slow load timer once data is fetched
+        clearTimeout(slowLoadTimer)
+        
         // Dev log removed - prevents revealing dataset title in production
         
         const initialGameState = createGameState(dataset)
@@ -221,6 +235,13 @@ function DailyGame() {
     setShowScrollHint(false)
     if (gameState && !gameState.isComplete) {
       const newGameState = processGuess(gameState, selectedOption)
+      
+      // Show missed guess toast if guess was wrong
+      if (!newGameState.isWon && newGameState.guesses.length > gameState.guesses.length) {
+        setMissedGuessToast(true)
+        setTimeout(() => setMissedGuessToast(false), 2500)
+      }
+      
       setGameState(newGameState)
 
       // Persist progress after each guess
@@ -500,6 +521,11 @@ function DailyGame() {
           <div className="loading-globe">🌍</div>
           <div>Loading today's data challenge...</div>
           <div className="loading-subtitle">Fetching live data from global sources</div>
+          {loadingSlowWarning && (
+            <div className="loading-slow-warning">
+              ⏱️ Taking longer than expected... Please hold on.
+            </div>
+          )}
         </div>
       </div>
     )
@@ -511,8 +537,15 @@ function DailyGame() {
       {/* Minimal mobile toast for win */}
       {showWinToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8}}>
-          <span>✅ Correct</span>
-          <span style={{opacity:0.75}}>{gameState?.dataset?.title}</span>
+          {/* <span>✅ Correct</span> */}
+          <span style={{opacity:0.75}}>✅ {gameState?.dataset?.title}</span>
+        </div>
+      )}
+      {/* Missed guess toast */}
+      {missedGuessToast && (
+        <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>
+          {/* <span>❌ Incorrect</span> */}
+          <span style={{opacity:0.85}}>❌ Try again!</span>
         </div>
       )}
       {alreadyPlayedModal && (
@@ -537,7 +570,7 @@ function DailyGame() {
       
       {/* Game Instructions Header */}
       <div className={`game-instructions ${!showInstructions ? 'fade-out' : ''}`}>
-        Guess what data this map is presenting?
+        Which data map does this represent?
       </div>
       
       {/* Top Right - Controls */}
@@ -640,18 +673,30 @@ function DailyGame() {
         
         {!gameState.isComplete && (
           !drawerCollapsed && (
-            <div className="options-grid">
-              {gameState.availableOptions.map((option, index) => (
-                <button
-                  key={index}
-                  className="option-btn"
-                  onClick={() => handleOptionSelect(option)}
-                  onTouchStart={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+            <>
+              <div style={{
+                fontSize: '0.9em',
+                fontWeight: '600',
+                marginBottom: '12px',
+                textAlign: 'center',
+                color: 'var(--textSecondary)',
+                opacity: 0.9
+              }}>
+                Select the data this map represents:
+              </div>
+              <div className="options-grid">
+                {gameState.availableOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className="option-btn"
+                    onClick={() => handleOptionSelect(option)}
+                    onTouchStart={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </>
           )
         )}
         {gameState.isComplete && (

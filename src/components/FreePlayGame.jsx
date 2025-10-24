@@ -17,6 +17,8 @@ export default function FreePlayGame() {
   const [showMenu, setShowMenu] = useState(false)
   const [drawerCollapsed, setDrawerCollapsed] = useState(false)
   const [showHandlePulse, setShowHandlePulse] = useState(true)
+  const [loadingSlowWarning, setLoadingSlowWarning] = useState(false)
+  const [missedGuessToast, setMissedGuessToast] = useState(false)
   const leftOptionsRef = useRef(null)
   const drawerTouch = useRef({ startY: 0, lastY: 0, dragging: false })
 
@@ -89,6 +91,15 @@ export default function FreePlayGame() {
 
   const loadRandomDataset = async () => {
     setLoading(true)
+    setLoadingSlowWarning(false)
+    
+    // Set timeout to show slow loading warning after 15 seconds
+    const slowLoadTimer = setTimeout(() => {
+      if (loading) {
+        setLoadingSlowWarning(true)
+      }
+    }, 15000)
+    
     try {
       const authenticDatasets = getAuthenticDatasets().filter(d => d.id) // Only use datasets with authentic data
       if (!authenticDatasets.length) throw new Error('No authentic datasets available')
@@ -109,6 +120,7 @@ export default function FreePlayGame() {
           setGameState(gs)
           setStats(getLeaderboardData(full))
           console.log(`✅ Successfully loaded dataset: ${random.id}`)
+          clearTimeout(slowLoadTimer)
           return // Success! Exit the function
           
         } catch (datasetError) {
@@ -118,11 +130,13 @@ export default function FreePlayGame() {
       }
       
       // If we get here, all attempts failed
+      clearTimeout(slowLoadTimer)
       throw new Error(`Failed to load any dataset after ${maxAttempts} attempts`)
       
     } catch (e) {
       console.error('FreePlay: failed loading dataset', e)
       // Set a loading error state instead of leaving it stuck
+      clearTimeout(slowLoadTimer)
       setGameState(null)
     } finally {
       setLoading(false)
@@ -134,6 +148,13 @@ export default function FreePlayGame() {
   const handleGuess = (opt) => {
     if (!gameState || gameState.isComplete) return
     const newState = processGuess(gameState, opt)
+    
+    // Show missed guess toast if guess was wrong
+    if (!newState.isWon && newState.guesses.length > gameState.guesses.length) {
+      setMissedGuessToast(true)
+      setTimeout(() => setMissedGuessToast(false), 2500)
+    }
+    
     setGameState(newState)
     if (newState.isComplete) {
       finalizeGame(newState)
@@ -149,7 +170,19 @@ export default function FreePlayGame() {
   }
 
   if (loading) {
-    return <div className="daily-game"><div className="loading"><div className="loading-globe">🌍</div><div>Loading random map...</div></div></div>
+    return (
+      <div className="daily-game">
+        <div className="loading">
+          <div className="loading-globe">🌍</div>
+          <div>Loading random map...</div>
+          {loadingSlowWarning && (
+            <div className="loading-slow-warning">
+              ⏱️ Taking longer than expected... Please hold on.
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
   
   if (!gameState) {
@@ -172,6 +205,13 @@ export default function FreePlayGame() {
 
   return (
     <div className="daily-game">
+      {/* Missed guess toast */}
+      {missedGuessToast && (
+        <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>
+          {/* <span> Incorrect</span> */}
+          <span style={{opacity:0.85}}>❌ Try again!</span>
+        </div>
+      )}
       <GlobeView dataset={gameState.dataset} showTooltips={showTooltips} />
       <div className="top-left-title">Free Play</div>
       <div className="top-right-controls">
@@ -223,17 +263,29 @@ export default function FreePlayGame() {
         
         {!gameState.isComplete && (
           !drawerCollapsed && (
-            <div className="options-grid">
-              {gameState.availableOptions.map((option, index) => (
-                <button
-                  key={index}
-                  className="option-btn"
-                  onClick={() => handleGuess(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+            <>
+              <div style={{
+                fontSize: '0.9em',
+                fontWeight: '600',
+                marginBottom: '12px',
+                textAlign: 'center',
+                color: 'var(--textSecondary)',
+                opacity: 0.9
+              }}>
+                Select the data this map represents:
+              </div>
+              <div className="options-grid">
+                {gameState.availableOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className="option-btn"
+                    onClick={() => handleGuess(option)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </>
           )
         )}
         {gameState.isComplete && (

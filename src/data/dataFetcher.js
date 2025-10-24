@@ -9,9 +9,23 @@ import populationDensityDataset from './populationDensity.js'
 // Cache configuration
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 const CACHE_KEY_PREFIX = 'worldofmaps_data_'
-const MIN_COUNTRIES_REQUIRED = 60
+const MIN_COUNTRIES_REQUIRED = 40
 const WORLD_BANK_YEAR_WINDOW = 5 // years back to look for latest non-null
 const REQUIRED_COUNTRIES = [] // Disabled for now
+
+// Datasets with known lower coverage - allow lower thresholds
+const LOW_COVERAGE_DATASETS = {
+  'fossil-fuel-consumption': 40,
+  'methane-emissions': 40,
+  'threatened-bird-species': 40,
+  'threatened-fish-species': 40,
+  'energy-imports': 40,
+  'voice-and-accountability-estimate': 40,
+  'contraceptive-prevalence': 40,
+  'mobile-cellular-subscriptions-total': 40,
+  'refugee-population': 40,
+  'total-reserves-in-months-imports': 40
+}
 
 // Storage shim for non-browser/test environments
 const storage = typeof localStorage !== 'undefined' ? localStorage : {
@@ -455,6 +469,9 @@ export async function fetchDataset(datasetId, dayIndex = null) {
   try {
     devLog(`🔄 Fetching dataset: ${datasetId}`)
     
+    // Determine minimum required countries for this dataset
+    const minRequired = LOW_COVERAGE_DATASETS[datasetId] || MIN_COUNTRIES_REQUIRED
+    
     let data = null
     let source = DATA_SOURCES.STATIC_BACKUP.attribution
     let datasetAttempts = []
@@ -504,14 +521,14 @@ export async function fetchDataset(datasetId, dayIndex = null) {
     }
     
     // Quality control: Ensure minimum country coverage before using external data
-    if (data && data.length >= MIN_COUNTRIES_REQUIRED /* required countries check disabled */) {
-      devLog(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries`)
+    if (data && data.length >= minRequired /* required countries check disabled */) {
+      devLog(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries (min required: ${minRequired})`)
     } else {
       if (data) {
         const missingReq = getMissingRequiredCountries(data)
         const reasonParts = []
-        if (data.length < MIN_COUNTRIES_REQUIRED) {
-          reasonParts.push(`coverage ${data.length}/${MIN_COUNTRIES_REQUIRED}`)
+        if (data.length < minRequired) {
+          reasonParts.push(`coverage ${data.length}/${minRequired}`)
         }
         if (missingReq.length) {
           reasonParts.push(`missing required: ${missingReq.join(', ')}`)
@@ -540,10 +557,10 @@ export async function fetchDataset(datasetId, dayIndex = null) {
     }
     
     // Final quality control check
-    if (data.length < MIN_COUNTRIES_REQUIRED /* || getMissingRequiredCountries(data).length */) {
+    if (data.length < minRequired /* || getMissingRequiredCountries(data).length */) {
       errorLog(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
       // Required countries check disabled
-      throw new Error(`Dataset ${datasetId} has insufficient data coverage: only ${data.length} countries available`)
+      throw new Error(`Dataset ${datasetId} has insufficient data coverage: only ${data.length} countries available (min required: ${minRequired})`)
     }
     
     devLog(`✅ Dataset ${datasetId} final validation passed: ${data.length} countries`)
