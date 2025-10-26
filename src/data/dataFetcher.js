@@ -9,22 +9,22 @@ import populationDensityDataset from './populationDensity.js'
 // Cache configuration
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 const CACHE_KEY_PREFIX = 'worldofmaps_data_'
-const MIN_COUNTRIES_REQUIRED = 40
+const MIN_COUNTRIES_REQUIRED = 60
 const WORLD_BANK_YEAR_WINDOW = 5 // years back to look for latest non-null
-const REQUIRED_COUNTRIES = [] // Disabled for now
+const REQUIRED_COUNTRIES = ['USA', 'CHN', 'IND', 'DEU', 'GBR', 'FRA', 'JPN', 'CAN', 'AUS', 'BRA'] // Major countries that must be present
 
-// Datasets with known lower coverage - allow lower thresholds
+// Datasets with known lower coverage - allow lower thresholds but still require major countries
 const LOW_COVERAGE_DATASETS = {
-  'fossil-fuel-consumption': 40,
-  'methane-emissions': 40,
-  'threatened-bird-species': 40,
-  'threatened-fish-species': 40,
-  'energy-imports': 40,
-  'voice-and-accountability-estimate': 40,
-  'contraceptive-prevalence': 40,
-  'mobile-cellular-subscriptions-total': 40,
-  'refugee-population': 40,
-  'total-reserves-in-months-imports': 40
+  'fossil-fuel-consumption': 50,
+  'methane-emissions': 50,
+  'threatened-bird-species': 45,
+  'threatened-fish-species': 45,
+  'energy-imports': 50,
+  'voice-and-accountability-estimate': 50,
+  'contraceptive-prevalence': 50,
+  'mobile-cellular-subscriptions-total': 50,
+  'refugee-population': 50,
+  'total-reserves-in-months-imports': 50
 }
 
 // Storage shim for non-browser/test environments
@@ -65,12 +65,23 @@ function getMissingRequiredCountries(data) {
 async function fetchWorldBankCountryIndicator(indicator, year, iso3) {
   try {
     const url = `${DATA_SOURCES.WORLD_BANK.baseUrl}/country/${iso3}/indicator/${indicator}?format=json&per_page=3&date=${year}`
+    console.log(`🔍 Fetching individual country: ${iso3} for indicator ${indicator}`)
     const resp = await fetch(url)
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    if (!resp.ok) {
+      console.warn(`❌ HTTP ${resp.status} for ${iso3}`)
+      throw new Error(`HTTP ${resp.status}`)
+    }
     const json = await resp.json()
-    if (!Array.isArray(json) || json.length < 2 || !Array.isArray(json[1])) return null
+    if (!Array.isArray(json) || json.length < 2 || !Array.isArray(json[1])) {
+      console.warn(`❌ Invalid response format for ${iso3}`)
+      return null
+    }
     const entry = json[1].find(e => e && e.value != null)
-    if (!entry) return null
+    if (!entry) {
+      console.warn(`❌ No valid data in response for ${iso3}`)
+      return null
+    }
+    console.log(`✅ Got data for ${iso3}: ${entry.country?.value} = ${entry.value}`)
     return {
       iso_a2: entry.countryiso3code?.slice(0, 2) || entry.country?.id?.slice(0, 2),
       iso_a3: entry.countryiso3code,
@@ -78,17 +89,37 @@ async function fetchWorldBankCountryIndicator(indicator, year, iso3) {
       value: parseFloat(entry.value),
       year: entry.date
     }
-  } catch(_) { return null }
+  } catch(e) {
+    console.warn(`❌ Error fetching ${iso3}:`, e.message)
+    return null
+  }
 }
 
 async function ensureRequiredCountriesWorldBank(indicator, year, data) {
   const missing = getMissingRequiredCountries(data)
-  if (!missing.length) return data
+  if (!missing.length) {
+    console.log(`✅ All ${REQUIRED_COUNTRIES.length} required countries present in dataset`)
+    return data
+  }
+  
+  console.warn(`⚠️ Missing ${missing.length} required countries: ${missing.join(', ')}`)
+  console.log(`🔄 Attempting to fetch missing countries individually...`)
+  
   const additions = []
   for (const iso3 of missing) {
     const item = await fetchWorldBankCountryIndicator(indicator, year, iso3)
-    if (item && !isNaN(item.value) && item.value > 0) additions.push(item)
+    if (item && !isNaN(item.value) && item.value > 0) {
+      console.log(`✅ Successfully fetched ${iso3}: ${item.name} = ${item.value}`)
+      additions.push(item)
+    } else {
+      console.warn(`❌ Failed to fetch ${iso3} - no valid data available`)
+    }
   }
+  
+  if (additions.length > 0) {
+    console.log(`✅ Added ${additions.length} countries through individual fetch`)
+  }
+  
   return additions.length ? [...data, ...additions] : data
 }
 
@@ -129,9 +160,24 @@ export async function fetchWorldBankData(indicator, year = 'latest') {
         }
       }
       const processed = [...byCountry.values()].filter(d => d.name && !isNaN(d.value) && d.value !== 0)
+      
+      // Detailed logging for missing countries diagnosis
+      console.log(`📊 World Bank API returned ${raw.length} total records for indicator ${indicator}`)
+      console.log(`📊 Processed ${byCountry.size} unique countries after deduplication`)
+      console.log(`📊 Final dataset has ${processed.length} countries after filtering`)
+      
       if (!processed.find(c => c.iso_a3 === 'USA')) {
         console.warn(`⚠️ USA missing for indicator ${indicator} in year range ${yearRange}`)
+        console.warn(`📋 Sample of countries present:`, processed.slice(0, 10).map(c => `${c.name} (${c.iso_a3})`))
+        // Check if USA was in raw data but filtered out
+        const usaInRaw = raw.filter(item => item.countryiso3code === 'USA')
+        if (usaInRaw.length > 0) {
+          console.warn(`🔍 USA found in raw data but filtered out:`, usaInRaw.map(u => ({ year: u.date, value: u.value })))
+        } else {
+          console.warn(`🔍 USA NOT in raw World Bank API response at all for this indicator`)
+        }
       }
+      
       const augmented = await ensureRequiredCountriesWorldBank(indicator, targetYear, processed)
       setCachedData(cacheKey, augmented)
       return augmented
@@ -521,21 +567,26 @@ export async function fetchDataset(datasetId, dayIndex = null) {
     }
     
     // Quality control: Ensure minimum country coverage before using external data
-    if (data && data.length >= minRequired /* required countries check disabled */) {
+    const missingRequired = getMissingRequiredCountries(data)
+    if (data && data.length >= minRequired && missingRequired.length === 0) {
       devLog(`✅ External dataset ${datasetId} passed quality check: ${data.length} countries (min required: ${minRequired})`)
+      console.log(`✅ Quality check passed for ${datasetId}: ${data.length} countries, all required countries present`)
     } else {
       if (data) {
-        const missingReq = getMissingRequiredCountries(data)
         const reasonParts = []
         if (data.length < minRequired) {
           reasonParts.push(`coverage ${data.length}/${minRequired}`)
         }
-        if (missingReq.length) {
-          reasonParts.push(`missing required: ${missingReq.join(', ')}`)
+        if (missingRequired.length > 0) {
+          reasonParts.push(`missing required: ${missingRequired.join(', ')}`)
         }
         const reason = reasonParts.join(' & ')
         datasetAttempts.push(`⚠️ External data insufficient: ${reason}`)
-        console.warn(`External dataset ${datasetId} rejected due to: ${reason}`)
+        console.warn(`❌ External dataset ${datasetId} rejected due to: ${reason}`)
+        console.warn(`📊 Dataset had ${data.length} countries but needed ${minRequired} minimum`)
+        if (missingRequired.length > 0) {
+          console.warn(`📋 Missing required countries (${missingRequired.length}/${REQUIRED_COUNTRIES.length}): ${missingRequired.join(', ')}`)
+        }
       }
       data = null // Reset to use fallback
     }
@@ -543,27 +594,47 @@ export async function fetchDataset(datasetId, dayIndex = null) {
     // Fallback to static data if external APIs failed or insufficient data
     if (!data) {
       devLog(`🛡️ Using authentic fallback data for ${datasetId}`)
+      console.log(`⚠️ External data sources failed or insufficient for ${datasetId}, trying fallback...`)
       data = await fetchAuthenticFallbackData(datasetId)
       if (data) {
         source = 'Curated World Bank Data'
         datasetAttempts.push(`✅ Authentic Fallback: ${data.length} countries (real data)`)
         console.log(`✓ Using authentic fallback data: ${data.length} countries`)
+        const fallbackMissing = getMissingRequiredCountries(data)
+        if (fallbackMissing.length > 0) {
+          console.warn(`⚠️ Fallback data also missing required countries: ${fallbackMissing.join(', ')}`)
+        }
+      } else {
+        console.error(`❌ No fallback data available for ${datasetId}`)
       }
     }
     
     if (!data || data.length === 0) {
       errorLog(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
+      console.error(`❌ CRITICAL: No data available for dataset ${datasetId}`)
+      console.error(`📋 Attempts made:`, datasetAttempts)
       throw new Error(`No data available for dataset: ${datasetId}`)
     }
     
     // Final quality control check
-    if (data.length < minRequired /* || getMissingRequiredCountries(data).length */) {
+    const finalMissingRequired = getMissingRequiredCountries(data)
+    if (data.length < minRequired || finalMissingRequired.length > 0) {
       errorLog(`❌ Dataset fetch summary for ${datasetId}:`, datasetAttempts)
-      // Required countries check disabled
-      throw new Error(`Dataset ${datasetId} has insufficient data coverage: only ${data.length} countries available (min required: ${minRequired})`)
+      const issues = []
+      if (data.length < minRequired) {
+        issues.push(`only ${data.length}/${minRequired} countries`)
+        console.error(`❌ Insufficient country count: ${data.length} < ${minRequired}`)
+      }
+      if (finalMissingRequired.length > 0) {
+        issues.push(`missing required countries: ${finalMissingRequired.join(', ')}`)
+        console.error(`❌ Missing ${finalMissingRequired.length} required countries: ${finalMissingRequired.join(', ')}`)
+        console.error(`📋 Countries present:`, data.slice(0, 20).map(c => c.iso_a3).join(', '))
+      }
+      throw new Error(`Dataset ${datasetId} has insufficient data coverage: ${issues.join(', ')}`)
     }
     
     devLog(`✅ Dataset ${datasetId} final validation passed: ${data.length} countries`)
+    console.log(`✅ Final validation passed for ${datasetId}: ${data.length} countries with all required countries`)
     devLog(`📈 Data sources attempted:`, datasetAttempts)
 
     // Generate complete dataset object with day-specific options if dayIndex provided
