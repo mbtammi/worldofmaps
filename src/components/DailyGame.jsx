@@ -15,7 +15,7 @@ const ShareSheet = lazy(() => import('./ShareSheet'))
 
 function DailyGame() {
   const [gameState, setGameState] = useState(null)
-  const [showTooltips, setShowTooltips] = useState(false)
+  const [showTooltips, setShowTooltips] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showInstructions, setShowInstructions] = useState(true)
   const [stats, setStats] = useState([])

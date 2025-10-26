@@ -13,7 +13,7 @@ export default function FreePlayGame() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState([])
   const [currentTheme, setCurrentTheme] = useState('dark')
-  const [showTooltips, setShowTooltips] = useState(false)
+  const [showTooltips, setShowTooltips] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [drawerCollapsed, setDrawerCollapsed] = useState(false)
   const [showHandlePulse, setShowHandlePulse] = useState(true)

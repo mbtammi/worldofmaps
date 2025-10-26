@@ -49,6 +49,16 @@ export const createGameState = (dataset) => {
     [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]]
   }
   
+  // Double-check: Ensure correct answer is NEVER first (safety check)
+  const correctAnswer = dataset.correctAnswers[0]
+  if (shuffledOptions[0] === correctAnswer || 
+      dataset.correctAnswers.some(ans => shuffledOptions[0].toLowerCase() === ans.toLowerCase())) {
+    const randomPos = Math.floor(Math.random() * 9) + 1
+    const temp = shuffledOptions[0]
+    shuffledOptions[0] = shuffledOptions[randomPos]
+    shuffledOptions[randomPos] = temp
+  }
+  
   return {
     dataset,
     guesses: [],

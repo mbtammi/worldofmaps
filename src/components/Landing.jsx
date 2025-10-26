@@ -6,7 +6,7 @@ import './Landing.css'
 
 function Landing() {
   const navigate = useNavigate();
-  const [playerCount, setPlayerCount] = useState('769+')
+  const [playerCount, setPlayerCount] = useState('1001+')
 
   // Placeholder: in future fetch from an API or analytics aggregate
   useEffect(() => {
