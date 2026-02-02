@@ -156,6 +156,81 @@ export const DATASET_CATEGORIES = {
       'coffee-consumption',
       'alcohol-consumption'
     ]
+  },
+  TOURISM: {
+    name: 'Tourism & Travel',
+    icon: '✈️',
+    datasets: [
+      'international-tourism-arrivals',
+      'international-tourism-receipts',
+      'international-tourism-expenditure',
+      'tourism-percent-exports',
+      'tourism-percent-gdp'
+    ]
+  },
+  FOOD_AGRICULTURE: {
+    name: 'Food & Agriculture',
+    icon: '🌾',
+    datasets: [
+      'cereal-production',
+      'cereal-yield',
+      'agricultural-machinery-tractors',
+      'fertilizer-consumption',
+      'crop-production-index',
+      'food-production-index',
+      'livestock-production-index'
+    ]
+  },
+  TRADE: {
+    name: 'International Trade',
+    icon: '🚢',
+    datasets: [
+      'trade-goods-services-percent-gdp',
+      'exports-percent-gdp',
+      'imports-percent-gdp',
+      'merchandise-trade-percent-gdp',
+      'services-exports-percent-total',
+      'services-imports-percent-total',
+      'tariff-rate-applied-weighted'
+    ]
+  },
+  INNOVATION: {
+    name: 'Innovation & Research',
+    icon: '🔬',
+    datasets: [
+      'researchers-rd-per-million',
+      'research-development-expenditure',
+      'patent-applications-residents',
+      'patent-applications-nonresidents',
+      'scientific-technical-journal-articles',
+      'high-technology-exports',
+      'trademark-applications-total'
+    ]
+  },
+  URBAN_DEVELOPMENT: {
+    name: 'Urban Development',
+    icon: '🏙️',
+    datasets: [
+      'urban-population-percent',
+      'urban-population-growth',
+      'urban-population-living-slums',
+      'population-largest-city',
+      'rural-population-percent',
+      'rural-population-growth'
+    ]
+  },
+  GENDER_EQUALITY: {
+    name: 'Gender & Equality',
+    icon: '⚖️',
+    datasets: [
+      'female-labor-force-participation',
+      'male-labor-force-participation',
+      'ratio-female-male-labor-participation',
+      'female-entrepreneurs-percent',
+      'women-business-law-index',
+      'proportion-seats-held-women-parliament',
+      'gender-parity-index-education'
+    ]
   }
 }
 
@@ -361,7 +436,58 @@ export const WORLD_BANK_INDICATORS = {
   'voice-and-accountability-estimate': 'VA.EST',
   'political-stability-estimate': 'PV.EST',
   'regulatory-quality-estimate': 'RQ.EST',
-  'government-effectiveness-estimate': 'GE.EST'
+  'government-effectiveness-estimate': 'GE.EST',
+  
+  // Tourism & Travel
+  'international-tourism-arrivals': 'ST.INT.ARVL',
+  'international-tourism-receipts': 'ST.INT.RCPT.CD',
+  'international-tourism-expenditure': 'ST.INT.XPND.CD',
+  'tourism-percent-exports': 'ST.INT.RCPT.XP.ZS',
+  'tourism-percent-gdp': 'ST.INT.RCPT.XP.ZS',
+  
+  // Food & Agriculture
+  'cereal-production': 'AG.PRD.CREL.MT',
+  'cereal-yield': 'AG.YLD.CREL.KG',
+  'agricultural-machinery-tractors': 'AG.AGR.TRAC.NO',
+  'fertilizer-consumption': 'AG.CON.FERT.ZS',
+  'crop-production-index': 'AG.PRD.CROP.XD',
+  'food-production-index': 'AG.PRD.FOOD.XD',
+  'livestock-production-index': 'AG.PRD.LVSK.XD',
+  
+  // International Trade
+  'trade-goods-services-percent-gdp': 'NE.TRD.GNFS.ZS',
+  'exports-percent-gdp': 'NE.EXP.GNFS.ZS',
+  'imports-percent-gdp': 'NE.IMP.GNFS.ZS',
+  'merchandise-trade-percent-gdp': 'TG.VAL.TOTL.GD.ZS',
+  'services-exports-percent-total': 'TG.VAL.SERV.CD.WT',
+  'services-imports-percent-total': 'TM.VAL.SERV.CD.WT',
+  'tariff-rate-applied-weighted': 'TM.TAX.MRCH.WM.AR.ZS',
+  
+  // Innovation & Research
+  'researchers-rd-per-million': 'SP.POP.SCIE.RD.P6',
+  'research-development-expenditure': 'GB.XPD.RSDV.GD.ZS',
+  'patent-applications-residents': 'IP.PAT.RESD',
+  'patent-applications-nonresidents': 'IP.PAT.NRES',
+  'scientific-technical-journal-articles': 'IP.JRN.ARTC.SC',
+  'high-technology-exports': 'TX.VAL.TECH.CD',
+  'trademark-applications-total': 'IP.TMK.TOTL',
+  
+  // Urban Development
+  'urban-population-percent': 'SP.URB.TOTL.IN.ZS',
+  'urban-population-growth': 'SP.URB.GROW',
+  'urban-population-living-slums': 'EN.POP.SLUM.UR.ZS',
+  'population-largest-city': 'EN.URB.LCTY',
+  'rural-population-percent': 'SP.RUR.TOTL.ZS',
+  'rural-population-growth': 'SP.RUR.TOTL.ZG',
+  
+  // Gender & Equality
+  'female-labor-force-participation': 'SL.TLF.CACT.FE.ZS',
+  'male-labor-force-participation': 'SL.TLF.CACT.MA.ZS',
+  'ratio-female-male-labor-participation': 'SL.TLF.CACT.FM.ZS',
+  'female-entrepreneurs-percent': 'IC.FRM.FEMO.ZS',
+  'women-business-law-index': 'SG.LAW.INDX',
+  'proportion-seats-held-women-parliament': 'SG.GEN.PARL.ZS',
+  'gender-parity-index-education': 'SE.ENR.PRIM.FM.ZS'
 }
 
 // Our World in Data Dataset Mappings (Conservative list of known datasets)
