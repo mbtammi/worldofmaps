@@ -9,25 +9,57 @@
 // - Packages like react-share only open URL/text-based share intents (Twitter/X, WhatsApp, Telegram, etc.) and cannot push a generated canvas image to stories.
 // - We therefore provide both: system share attempt + per-platform URL links + save image fallback.
 
-export function generateShareText(result) {
-  // result: { isWon, guesses, guessCount, datasetTitle, dayIndex, challengeId, durationMs }
-  const lines = []
-  const dayStr = result.dayIndex != null ? `Day ${result.dayIndex}` : 'Free Play'
-  const outcome = result.isWon ? `✅ Solved` : `❌ Not solved`
-  const guessPart = result.isWon ? `${result.guessCount} guesses` : `${result.guessCount} tries`
-  const timeSec = result.durationMs ? Math.round(result.durationMs / 1000) : null
-  const timePart = timeSec != null ? `in ${timeSec}s` : ''
-  lines.push(`WorldOfMaps • ${dayStr}`)
-  lines.push(`${outcome} ${timePart}`.trim())
-  lines.push(`${result.datasetTitle}`)
+// Total options the daily challenge presents. The share grid is fixed-width at this size
+// so the visual fingerprint is consistent across days regardless of how many guesses were used.
+const SHARE_GRID_SIZE = 10
 
-  // Minimal guess history representation
-  if (Array.isArray(result.guesses) && result.guesses.length) {
-    const guessSymbols = result.guesses.map(g => g.isCorrect ? '🟩' : '🟥').join('')
-    lines.push(guessSymbols)
+function formatDurationShort(ms) {
+  if (!ms || ms < 0) return ''
+  const totalSec = Math.round(ms / 1000)
+  if (totalSec < 60) return `${totalSec}s`
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return s === 0 ? `${m}m` : `${m}m ${s}s`
+}
+
+function buildGuessGrid(guesses, isWon, total = SHARE_GRID_SIZE) {
+  const count = Array.isArray(guesses) ? guesses.length : 0
+  const symbols = []
+  for (let i = 0; i < Math.min(count, total); i++) {
+    const isFinal = i === count - 1
+    symbols.push(isFinal && isWon ? '🟩' : '🟥')
+  }
+  while (symbols.length < total) symbols.push('⬜')
+  return symbols.join('')
+}
+
+export function generateShareText(result) {
+  // result: { isWon, guesses, guessCount, dayIndex, durationMs, globalAvg? }
+  // NOTE: deliberately does NOT include `datasetTitle` — the share must tease the puzzle,
+  // not spoil it for the next reader. The 9:16 story image (createStoryShareImage) is also
+  // built to omit the title.
+  const dayStr = result.dayIndex != null ? `Day ${result.dayIndex}` : 'Free Play'
+  const scoreStr = result.isWon ? `${result.guessCount}/${SHARE_GRID_SIZE}` : `X/${SHARE_GRID_SIZE}`
+  const timeStr = formatDurationShort(result.durationMs)
+  const lineTwoParts = [scoreStr]
+  if (timeStr) lineTwoParts.push(timeStr)
+
+  const lines = [
+    `🌍 World of Maps · ${dayStr}`,
+    lineTwoParts.join(' · '),
+    buildGuessGrid(result.guesses, result.isWon),
+  ]
+
+  if (
+    result.isWon &&
+    typeof result.globalAvg === 'number' &&
+    !Number.isNaN(result.globalAvg) &&
+    result.guessCount < result.globalAvg
+  ) {
+    lines.push(`🏆 Beat the average (${result.globalAvg.toFixed(1)})`)
   }
 
-  lines.push('#worldofthemaps https://worldofthemaps.com')
+  lines.push('worldofthemaps.com')
   return lines.join('\n')
 }
 

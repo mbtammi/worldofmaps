@@ -322,7 +322,8 @@ function DailyGame() {
       datasetTitle: dataset.title,
       dayIndex: dataset.challengeInfo?.dayIndex,
       challengeId: dataset.challengeInfo?.challengeId,
-      durationMs: Date.now() - gameState.startTime
+      durationMs: Date.now() - gameState.startTime,
+      globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
     }
     setShareStatus('preparing')
     // Create 9:16 story image (no title reveal)
@@ -760,7 +761,8 @@ function DailyGame() {
             datasetTitle: gameState.dataset.title,
             dayIndex: gameState.dataset.challengeInfo?.dayIndex,
             challengeId: gameState.dataset.challengeInfo?.challengeId,
-            durationMs: Date.now() - gameState.startTime
+            durationMs: Date.now() - gameState.startTime,
+            globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
           }}
         />
       </Suspense>
