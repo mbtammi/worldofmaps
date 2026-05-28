@@ -44,6 +44,16 @@ function Footer() {
               How to Play
             </button>
             <a
+              href="/atlas"
+              className="footer-link"
+              aria-label="World data atlas: maps and country rankings"
+            >Data Atlas</a>
+            <a
+              href="/blog"
+              className="footer-link"
+              aria-label="World of Maps blog: data stories and rankings"
+            >Blog</a>
+            <a
               href="https://worldofthemaps.com/landing"
               className="footer-link"
               aria-label="Geography game home page"

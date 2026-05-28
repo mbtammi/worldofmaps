@@ -8,6 +8,8 @@ import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllTheme
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
 import FeatureRequestsModal from './FeatureRequestsModal'
 import { hasNewFeaturesRemote } from '../data/featureRequestsRemote'
+import SEO from './SEO'
+import { ROUTE_META } from '../seo/routeMeta'
 import './DailyGame.css'
 
 // Lazy load ShareSheet to improve initial page load performance
@@ -533,6 +535,7 @@ function DailyGame() {
 
   return (
     <>
+    <SEO {...ROUTE_META['/']} />
     <div className="daily-game">
       {/* Minimal mobile toast for win */}
       {showWinToast && (
@@ -621,10 +624,6 @@ function DailyGame() {
                 onClick={() => { setFeatureModalOpen(true); setFeatureHasNew(false); setShowMenu(false); }}
               >
                 ❗ Feature Requests
-              </button>
-              <button
-                className="menu-item" >
-                📊 Stats (Waiting...)
               </button>
             </div>
           )}

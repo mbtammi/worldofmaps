@@ -1,0 +1,583 @@
+[
+  {
+    "id": "literacy-rate",
+    "title": "Adult Literacy Rate",
+    "category": "Demographics & Society",
+    "count": 86,
+    "year": 2024
+  },
+  {
+    "id": "agriculture-value",
+    "title": "Agriculture Value",
+    "category": "Economy & Development",
+    "count": 197,
+    "year": 2024
+  },
+  {
+    "id": "air-passengers",
+    "title": "Air Passengers",
+    "category": "Infrastructure & Transport",
+    "count": 155,
+    "year": 2023
+  },
+  {
+    "id": "birth-rate",
+    "title": "Birth Rate",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "cereal-production",
+    "title": "Cereal Production",
+    "category": "Food & Agriculture",
+    "count": 179,
+    "year": 2024
+  },
+  {
+    "id": "cereal-yield",
+    "title": "Cereal Yield",
+    "category": "Food & Agriculture",
+    "count": 179,
+    "year": 2024
+  },
+  {
+    "id": "crop-production-index",
+    "title": "Crop Production Index",
+    "category": "Food & Agriculture",
+    "count": 195,
+    "year": 2022
+  },
+  {
+    "id": "death-rate",
+    "title": "Death Rate",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "education-expenditure",
+    "title": "Education Expenditure",
+    "category": "Education & Knowledge",
+    "count": 180,
+    "year": 2025
+  },
+  {
+    "id": "electricity-access",
+    "title": "Electricity Access",
+    "category": "Infrastructure & Transport",
+    "count": 215,
+    "year": 2023
+  },
+  {
+    "id": "electricity-consumption",
+    "title": "Electricity Consumption",
+    "category": "Environment & Climate",
+    "count": 149,
+    "year": 2024
+  },
+  {
+    "id": "energy-imports",
+    "title": "Energy Imports",
+    "category": "Environment & Climate",
+    "count": 140,
+    "year": 2023
+  },
+  {
+    "id": "exports-goods-services",
+    "title": "Exports Goods Services",
+    "category": "Economy & Development",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "exports-percent-gdp",
+    "title": "Exports Percent Gdp",
+    "category": "International Trade",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "female-entrepreneurs-percent",
+    "title": "Female Entrepreneurs Percent",
+    "category": "Gender & Equality",
+    "count": 141,
+    "year": 2025
+  },
+  {
+    "id": "female-labor-force-participation",
+    "title": "Female Labor Force Participation",
+    "category": "Gender & Equality",
+    "count": 187,
+    "year": 2025
+  },
+  {
+    "id": "fertility-rate",
+    "title": "Fertility Rate",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "fertilizer-consumption",
+    "title": "Fertilizer Consumption",
+    "category": "Food & Agriculture",
+    "count": 190,
+    "year": 2023
+  },
+  {
+    "id": "fixed-broadband",
+    "title": "Fixed Broadband",
+    "category": "Technology & Innovation",
+    "count": 207,
+    "year": 2024
+  },
+  {
+    "id": "food-production-index",
+    "title": "Food Production Index",
+    "category": "Food & Agriculture",
+    "count": 195,
+    "year": 2022
+  },
+  {
+    "id": "foreign-investment",
+    "title": "Foreign Investment",
+    "category": "Economy & Development",
+    "count": 196,
+    "year": 2024
+  },
+  {
+    "id": "forest-coverage",
+    "title": "Forest Coverage",
+    "category": "Environment & Climate",
+    "count": 210,
+    "year": 2023
+  },
+  {
+    "id": "gdp-growth",
+    "title": "Gdp Growth",
+    "category": "Economy & Development",
+    "count": 210,
+    "year": 2024
+  },
+  {
+    "id": "gdp-per-capita",
+    "title": "GDP per Capita",
+    "category": "Economy & Development",
+    "count": 210,
+    "year": 2024
+  },
+  {
+    "id": "gdp-total",
+    "title": "Gdp Total",
+    "category": "Economy & Development",
+    "count": 210,
+    "year": 2024
+  },
+  {
+    "id": "gender-parity-index-education",
+    "title": "Gender Parity Index Education",
+    "category": "Gender & Equality",
+    "count": 71,
+    "year": 2022
+  },
+  {
+    "id": "gni-per-capita",
+    "title": "Gni Per Capita",
+    "category": "Economy & Development",
+    "count": 201,
+    "year": 2024
+  },
+  {
+    "id": "government-expenditure",
+    "title": "Government Expenditure",
+    "category": "Economy & Development",
+    "count": 127,
+    "year": 2024
+  },
+  {
+    "id": "gross-savings",
+    "title": "Gross Savings",
+    "category": "Economy & Development",
+    "count": 159,
+    "year": 2024
+  },
+  {
+    "id": "healthcare-expenditure",
+    "title": "Healthcare Expenditure",
+    "category": "Health & Wellbeing",
+    "count": 193,
+    "year": 2024
+  },
+  {
+    "id": "high-technology-exports",
+    "title": "High Technology Exports",
+    "category": "Innovation & Research",
+    "count": 165,
+    "year": 2024
+  },
+  {
+    "id": "hospital-beds",
+    "title": "Hospital Beds",
+    "category": "Health & Wellbeing",
+    "count": 127,
+    "year": 2023
+  },
+  {
+    "id": "immunization-dpt",
+    "title": "Immunization Dpt",
+    "category": "Health & Wellbeing",
+    "count": 193,
+    "year": 2024
+  },
+  {
+    "id": "immunization-measles",
+    "title": "Immunization Measles",
+    "category": "Health & Wellbeing",
+    "count": 193,
+    "year": 2024
+  },
+  {
+    "id": "imports-goods-services",
+    "title": "Imports Goods Services",
+    "category": "Economy & Development",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "imports-percent-gdp",
+    "title": "Imports Percent Gdp",
+    "category": "International Trade",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "infant-mortality",
+    "title": "Infant Mortality",
+    "category": "Demographics & Society",
+    "count": 196,
+    "year": 2024
+  },
+  {
+    "id": "inflation-rate",
+    "title": "Inflation Rate",
+    "category": "Economy & Development",
+    "count": 179,
+    "year": 2024
+  },
+  {
+    "id": "internet-users",
+    "title": "Internet Users",
+    "category": "Technology & Innovation",
+    "count": 186,
+    "year": 2025
+  },
+  {
+    "id": "land-area",
+    "title": "Land Area",
+    "category": "Demographics & Society",
+    "count": 250,
+    "year": 2025
+  },
+  {
+    "id": "languages-count",
+    "title": "Languages Count",
+    "category": "Cultural & Structural Diversity",
+    "count": 249,
+    "year": 2025
+  },
+  {
+    "id": "life-expectancy",
+    "title": "Life Expectancy",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "literacy-rate-youth",
+    "title": "Literacy Rate Youth",
+    "category": "Demographics & Society",
+    "count": 91,
+    "year": 2024
+  },
+  {
+    "id": "livestock-production-index",
+    "title": "Livestock Production Index",
+    "category": "Food & Agriculture",
+    "count": 194,
+    "year": 2022
+  },
+  {
+    "id": "male-labor-force-participation",
+    "title": "Male Labor Force Participation",
+    "category": "Gender & Equality",
+    "count": 187,
+    "year": 2025
+  },
+  {
+    "id": "manufacturing-value",
+    "title": "Manufacturing Value",
+    "category": "Economy & Development",
+    "count": 192,
+    "year": 2024
+  },
+  {
+    "id": "maternal-mortality",
+    "title": "Maternal Mortality",
+    "category": "Health & Wellbeing",
+    "count": 194,
+    "year": 2023
+  },
+  {
+    "id": "merchandise-trade-percent-gdp",
+    "title": "Merchandise Trade Percent Gdp",
+    "category": "International Trade",
+    "count": 204,
+    "year": 2024
+  },
+  {
+    "id": "mobile-subscriptions",
+    "title": "Mobile Subscriptions",
+    "category": "Technology & Innovation",
+    "count": 210,
+    "year": 2024
+  },
+  {
+    "id": "nurses-midwives",
+    "title": "Nurses Midwives",
+    "category": "Health & Wellbeing",
+    "count": 161,
+    "year": 2023
+  },
+  {
+    "id": "patent-applications-nonresidents",
+    "title": "Patent Applications Nonresidents",
+    "category": "Innovation & Research",
+    "count": 121,
+    "year": 2021
+  },
+  {
+    "id": "patent-applications-residents",
+    "title": "Patent Applications Residents",
+    "category": "Innovation & Research",
+    "count": 113,
+    "year": 2021
+  },
+  {
+    "id": "physicians-density",
+    "title": "Physicians Density",
+    "category": "Health & Wellbeing",
+    "count": 154,
+    "year": 2023
+  },
+  {
+    "id": "population-ages-0-14",
+    "title": "Population Ages 0 14",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "population-ages-65",
+    "title": "Population Ages 65",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "population-density",
+    "title": "Population Density",
+    "category": "Demographics & Society",
+    "count": 216,
+    "year": 2023
+  },
+  {
+    "id": "population-growth",
+    "title": "Population Growth",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "population-largest-city",
+    "title": "Population Largest City",
+    "category": "Urban Development",
+    "count": 153,
+    "year": 2025
+  },
+  {
+    "id": "population-total",
+    "title": "Population Total",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "proportion-seats-held-women-parliament",
+    "title": "Proportion Seats Held Women Parliament",
+    "category": "Gender & Equality",
+    "count": 187,
+    "year": 2025
+  },
+  {
+    "id": "rail-lines",
+    "title": "Rail Lines",
+    "category": "Infrastructure & Transport",
+    "count": 65,
+    "year": 2021
+  },
+  {
+    "id": "ratio-female-male-labor-participation",
+    "title": "Ratio Female Male Labor Participation",
+    "category": "Gender & Equality",
+    "count": 187,
+    "year": 2025
+  },
+  {
+    "id": "renewable-energy",
+    "title": "Renewable Energy Use",
+    "category": "Environment & Climate",
+    "count": 206,
+    "year": 2022
+  },
+  {
+    "id": "research-development-expenditure",
+    "title": "Research Development Expenditure",
+    "category": "Innovation & Research",
+    "count": 104,
+    "year": 2024
+  },
+  {
+    "id": "researchers-rd-per-million",
+    "title": "Researchers Rd Per Million",
+    "category": "Innovation & Research",
+    "count": 99,
+    "year": 2024
+  },
+  {
+    "id": "rural-population-growth",
+    "title": "Rural Population Growth",
+    "category": "Urban Development",
+    "count": 205,
+    "year": 2024
+  },
+  {
+    "id": "rural-population-percent",
+    "title": "Rural Population Percent",
+    "category": "Urban Development",
+    "count": 205,
+    "year": 2024
+  },
+  {
+    "id": "sanitation-access",
+    "title": "Sanitation Access",
+    "category": "Infrastructure & Transport",
+    "count": 201,
+    "year": 2024
+  },
+  {
+    "id": "scientific-technical-journal-articles",
+    "title": "Scientific Technical Journal Articles",
+    "category": "Innovation & Research",
+    "count": 197,
+    "year": 2022
+  },
+  {
+    "id": "services-imports-percent-total",
+    "title": "Services Imports Percent Total",
+    "category": "International Trade",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "tariff-rate-applied-weighted",
+    "title": "Tariff Rate Applied Weighted",
+    "category": "International Trade",
+    "count": 165,
+    "year": 2022
+  },
+  {
+    "id": "tax-revenue",
+    "title": "Tax Revenue",
+    "category": "Economy & Development",
+    "count": 129,
+    "year": 2024
+  },
+  {
+    "id": "telephone-lines",
+    "title": "Telephone Lines",
+    "category": "Technology & Innovation",
+    "count": 206,
+    "year": 2024
+  },
+  {
+    "id": "tertiary-enrollment",
+    "title": "Tertiary Enrollment",
+    "category": "Education & Knowledge",
+    "count": 150,
+    "year": 2025
+  },
+  {
+    "id": "timezones-count",
+    "title": "Timezones Count",
+    "category": "Cultural & Structural Diversity",
+    "count": 250,
+    "year": 2025
+  },
+  {
+    "id": "trade-goods-services-percent-gdp",
+    "title": "Trade Goods Services Percent Gdp",
+    "category": "International Trade",
+    "count": 182,
+    "year": 2024
+  },
+  {
+    "id": "tuberculosis-incidence",
+    "title": "Tuberculosis Incidence",
+    "category": "Health & Wellbeing",
+    "count": 206,
+    "year": 2024
+  },
+  {
+    "id": "unemployment-rate",
+    "title": "Unemployment Rate",
+    "category": "Economy & Development",
+    "count": 187,
+    "year": 2025
+  },
+  {
+    "id": "urban-population",
+    "title": "Urban Population",
+    "category": "Demographics & Society",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "urban-population-growth",
+    "title": "Urban Population Growth",
+    "category": "Urban Development",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "urban-population-living-slums",
+    "title": "Urban Population Living Slums",
+    "category": "Urban Development",
+    "count": 164,
+    "year": 2022
+  },
+  {
+    "id": "urban-population-percent",
+    "title": "Urban Population Percent",
+    "category": "Urban Development",
+    "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "water-access",
+    "title": "Water Access",
+    "category": "Infrastructure & Transport",
+    "count": 204,
+    "year": 2024
+  }
+]

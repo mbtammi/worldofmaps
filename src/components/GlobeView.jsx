@@ -123,8 +123,8 @@ function GlobeView({ dataset, showTooltips = false }) {
 
   // Load countries data - optimized for faster loading
   useEffect(() => {
-    // Use a smaller resolution for faster loading (110m instead of 50m)
-    fetch('//unpkg.com/world-atlas/countries-110m.json')
+    // Self-hosted world-atlas topology (110m) - no runtime CDN dependency
+    fetch('/countries-110m.json')
       .then(res => res.json())
       .then(topology => {
         const countries = feature(topology, topology.objects.countries).features

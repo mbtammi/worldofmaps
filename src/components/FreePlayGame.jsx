@@ -5,6 +5,8 @@ import { fetchDataset } from '../data/dataFetcher'
 import { createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { getLeaderboardData } from '../data/gameStats'
 import { getAllThemes, getNextTheme, applyTheme, initializeTheme } from '../data/themeManager'
+import SEO from './SEO'
+import { ROUTE_META } from '../seo/routeMeta'
 import './DailyGame.css'
 
 // Free play mode: user can play unlimited random datasets (excluding today's) without affecting streak
@@ -205,6 +207,7 @@ export default function FreePlayGame() {
 
   return (
     <div className="daily-game">
+      <SEO {...ROUTE_META['/play']} />
       {/* Missed guess toast */}
       {missedGuessToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>

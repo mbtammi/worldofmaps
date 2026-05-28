@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Header from './Header'
 import Footer from './Footer'
+import SEO from './SEO'
+import { ROUTE_META } from '../seo/routeMeta'
 import './Landing.css'
 
 function Landing() {
@@ -16,6 +18,7 @@ function Landing() {
 
   return (
     <div className="landing-page">
+      <SEO {...ROUTE_META['/landing']} />
       <Header />
       
       <main className="landing-main">
@@ -61,6 +64,14 @@ function Landing() {
             <a href="/play" className="landing-internal-link">
               <span className="internal-link-icon">🎮</span>
               <span className="internal-link-text">Free Play Mode</span>
+            </a>
+            <a href="/atlas" className="landing-internal-link">
+              <span className="internal-link-icon">🗺️</span>
+              <span className="internal-link-text">World Data Atlas</span>
+            </a>
+            <a href="/blog" className="landing-internal-link">
+              <span className="internal-link-icon">📝</span>
+              <span className="internal-link-text">Blog</span>
             </a>
             <a href="/how-to-play" className="landing-internal-link">
               <span className="internal-link-icon">❓</span>

@@ -1,10 +1,13 @@
 import Header from './Header'
 import Footer from './Footer'
+import SEO from './SEO'
+import { ROUTE_META } from '../seo/routeMeta'
 import './Layout.css'
 
 function About() {
   return (
     <div className="page-with-nav">
+      <SEO {...ROUTE_META['/about']} />
       <Header />
       
       <main className="page-content">

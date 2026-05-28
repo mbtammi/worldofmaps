@@ -1,0 +1,201 @@
+/* Atlas pages (/atlas and /atlas/:id). Dark theme to match Layout.css content pages. */
+
+.atlas .atlas-breadcrumb {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+.atlas .atlas-breadcrumb a {
+  color: #7fd1ff;
+  text-decoration: none;
+}
+.atlas .atlas-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.atlas .atlas-intro {
+  color: #cbd5e0;
+  font-size: 1.15rem;
+  max-width: 70ch;
+}
+
+.atlas .atlas-loading {
+  padding: 4rem 0;
+  text-align: center;
+  font-size: 1.3rem;
+  color: #cbd5e0;
+}
+
+/* Stats cards */
+.atlas .atlas-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.atlas .atlas-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+.atlas .atlas-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+.atlas .atlas-stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.atlas .atlas-stat-sub {
+  font-size: 0.9rem;
+  color: #7fd1ff;
+}
+
+.atlas .atlas-funfact {
+  background: rgba(255, 202, 26, 0.1);
+  border-left: 4px solid #ffca1a;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  color: #f1f5f9 !important;
+  font-size: 1.05rem !important;
+}
+
+/* Top-10 horizontal bar chart */
+.atlas .atlas-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1.5rem 0 2.5rem;
+}
+.atlas .atlas-bar-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+.atlas .atlas-bar-label {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.atlas .atlas-bar-track {
+  display: block;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  height: 18px;
+  overflow: hidden;
+}
+.atlas .atlas-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #3a8fd6, #7fd1ff);
+}
+.atlas .atlas-bar-val {
+  font-size: 0.85rem;
+  color: #cbd5e0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Ranked table */
+.atlas .atlas-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 2rem;
+  font-size: 0.95rem;
+}
+.atlas .atlas-table th,
+.atlas .atlas-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+.atlas .atlas-table th {
+  color: #94a3b8;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: #16213e;
+}
+.atlas .atlas-table td:first-child {
+  color: #64748b;
+  width: 3rem;
+}
+.atlas .atlas-table td:last-child,
+.atlas .atlas-table th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.atlas .atlas-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.atlas .atlas-source {
+  font-size: 0.85rem !important;
+  color: #94a3b8 !important;
+}
+
+/* CTA */
+.atlas .atlas-cta {
+  margin: 2.5rem 0;
+}
+.atlas .atlas-cta-btn {
+  display: inline-block;
+  padding: 0.85rem 1.75rem;
+  background: linear-gradient(135deg, #3a8fd6, #1e4b84);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.atlas .atlas-cta-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Related + index lists */
+.atlas .atlas-related-list,
+.atlas .atlas-cat-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+.atlas .atlas-cat-list {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.atlas .atlas-related-list a,
+.atlas .atlas-cat-list a {
+  color: #7fd1ff;
+  text-decoration: none;
+}
+.atlas .atlas-related-list a:hover,
+.atlas .atlas-cat-list a:hover {
+  text-decoration: underline;
+}
+.atlas .atlas-cat-count {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+.atlas .atlas-cat {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .atlas .atlas-bar-row {
+    grid-template-columns: 110px 1fr auto;
+  }
+}

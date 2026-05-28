@@ -2,9 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react()],
-  
+
   build: {
     // Production build optimizations
     minify: 'terser',
@@ -16,32 +16,35 @@ export default defineConfig({
         pure_funcs: ['console.log'] // Only remove console.log specifically
       }
     },
-    // Optimize bundle size
+    // Optimize bundle size. Vendor chunk splitting only applies to the client build;
+    // in the SSR/prerender build these deps are external, so manualChunks would error.
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split vendor code for better caching
-          'react-vendor': ['react', 'react-dom'],
-          'globe-vendor': ['react-globe.gl', 'topojson-client']
-        }
-      }
+      output: isSsrBuild
+        ? {}
+        : {
+            manualChunks: {
+              // Split vendor code for better caching
+              'react-vendor': ['react', 'react-dom'],
+              'globe-vendor': ['react-globe.gl', 'topojson-client']
+            }
+          }
     },
     // Generate source maps for debugging production issues
     sourcemap: false, // Disable for security in production
     // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000
   },
-  
+
   // Development server configuration
   server: {
     port: 5173,
     strictPort: false,
     open: false
   },
-  
+
   // Preview server configuration (for testing production build locally)
   preview: {
     port: 4173,
     strictPort: false
   }
-})
+}))
