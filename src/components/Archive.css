@@ -1,0 +1,71 @@
+/* /archive page. Dark theme to match Layout.css content pages. */
+
+.archive .archive-intro {
+  color: #cbd5e0;
+  font-size: 1.1rem;
+  max-width: 70ch;
+  margin-bottom: 1.5rem;
+}
+
+.archive .archive-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.archive .archive-item { margin: 0; }
+
+.archive .archive-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.archive .archive-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 202, 26, 0.45);
+  transform: translateY(-1px);
+}
+
+.archive .archive-date {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+.archive .archive-dow {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.archive .archive-badge {
+  font-size: 0.7rem;
+  color: #0b2545;
+  background: linear-gradient(135deg, #7fd1ff, #b6e8ff);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.archive .archive-footer {
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+.archive .archive-footer a {
+  color: #7fd1ff;
+  text-decoration: none;
+}
+.archive .archive-footer a:hover { text-decoration: underline; }

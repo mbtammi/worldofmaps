@@ -33,12 +33,27 @@ function buildGuessGrid(guesses, isWon, total = SHARE_GRID_SIZE) {
   return symbols.join('')
 }
 
+function formatArchiveDate(yyyyMmDd) {
+  // Cheap, locale-free: "2026-05-27" → "May 27"
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const parts = String(yyyyMmDd).split('-')
+  if (parts.length !== 3) return yyyyMmDd
+  const mi = parseInt(parts[1], 10) - 1
+  if (isNaN(mi) || mi < 0 || mi > 11) return yyyyMmDd
+  return `${months[mi]} ${parseInt(parts[2], 10)}`
+}
+
 export function generateShareText(result) {
-  // result: { isWon, guesses, guessCount, dayIndex, durationMs, globalAvg? }
+  // result: { isWon, guesses, guessCount, dayIndex, durationMs, globalAvg?, dayDate? }
   // NOTE: deliberately does NOT include `datasetTitle` — the share must tease the puzzle,
   // not spoil it for the next reader. The 9:16 story image (createStoryShareImage) is also
   // built to omit the title.
-  const dayStr = result.dayIndex != null ? `Day ${result.dayIndex}` : 'Free Play'
+  // dayDate (YYYY-MM-DD) is set for past-day archive plays so the share is dated, not Day-numbered.
+  const dayStr = result.dayDate
+    ? `📅 ${formatArchiveDate(result.dayDate)} (archive)`
+    : result.dayIndex != null
+      ? `Day ${result.dayIndex}`
+      : 'Free Play'
   const scoreStr = result.isWon ? `${result.guessCount}/${SHARE_GRID_SIZE}` : `X/${SHARE_GRID_SIZE}`
   const timeStr = formatDurationShort(result.durationMs)
   const lineTwoParts = [scoreStr]

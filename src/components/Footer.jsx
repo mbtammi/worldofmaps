@@ -54,6 +54,11 @@ function Footer() {
               aria-label="World of Maps blog: data stories and rankings"
             >Blog</a>
             <a
+              href="/archive"
+              className="footer-link"
+              aria-label="Past daily challenges archive"
+            >Archive</a>
+            <a
               href="https://worldofthemaps.com/landing"
               className="footer-link"
               aria-label="Geography game home page"

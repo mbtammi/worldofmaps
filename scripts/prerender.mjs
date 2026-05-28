@@ -172,7 +172,42 @@ for (const entry of blogIndex) {
 }
 console.log(`✓ ${blogCount} blog posts`)
 
-// 4) Sitemap: game routes (CSR but indexable) + everything prerendered.
+// 4) Past-day archive pages — last 30 days at /daily/:date.
+// Each is statically rendered with a unique title/description so search engines have a
+// distinct page per date. The body is just the Suspense fallback (the actual game lazy-loads
+// on the client), which is fine for SEO since the head + visible date is the unique signal.
+const PAST_DAYS = 30
+const ARCHIVE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const formatLongDate = (yyyyMmDd) => {
+  const parts = yyyyMmDd.split('-')
+  return `${ARCHIVE_MONTHS[parseInt(parts[1], 10) - 1]} ${parseInt(parts[2], 10)}, ${parts[0]}`
+}
+const dateForDaysAgo = (daysAgo) => {
+  const d = new Date(Date.now() - daysAgo * 86400000)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+let pastCount = 0
+for (let daysAgo = 1; daysAgo <= PAST_DAYS; daysAgo++) {
+  const dateStr = dateForDaysAgo(daysAgo)
+  const route = `/daily/${dateStr}`
+  const longDate = formatLongDate(dateStr)
+  const meta = {
+    path: route,
+    title: `Daily Map · ${longDate} | World of Maps`,
+    description: `Replay the World of Maps daily map challenge from ${longDate}. Archive plays don't affect your daily streak — guess the global dataset behind the map.`,
+    keywords: ['daily map', 'archive challenge', 'world of maps', longDate.toLowerCase()],
+  }
+  writePage(route, meta)
+  generated.push(route)
+  pastCount++
+}
+console.log(`✓ ${pastCount} past-day archive pages`)
+
+// 5) Sitemap: game routes (CSR but indexable) + everything prerendered.
 const today = new Date().toISOString().slice(0, 10)
 const urls = [...new Set(['/', '/play', ...generated])]
 const xml =
@@ -182,7 +217,13 @@ const xml =
     .map((u) => {
       const loc = `${SITE_URL}${u === '/' ? '/' : u}`
       const priority =
-        u === '/' ? '1.0' : u.startsWith('/atlas/') || u.startsWith('/blog/') ? '0.7' : '0.8'
+        u === '/'
+          ? '1.0'
+          : u.startsWith('/daily/')
+            ? '0.5'
+            : u.startsWith('/atlas/') || u.startsWith('/blog/')
+              ? '0.7'
+              : '0.8'
       const changefreq = u === '/' ? 'daily' : 'weekly'
       return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
     })

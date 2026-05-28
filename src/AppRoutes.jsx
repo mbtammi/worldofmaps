@@ -7,6 +7,7 @@ import AtlasIndex from './components/AtlasIndex'
 import Atlas from './components/Atlas'
 import BlogIndex from './components/BlogIndex'
 import BlogPost from './components/BlogPost'
+import ArchiveIndex from './components/ArchiveIndex'
 import NotFound from './components/NotFound'
 import './App.css'
 
@@ -46,6 +47,15 @@ export default function AppRoutes() {
           </Suspense>
         }
       />
+      <Route
+        path="/daily/:date"
+        element={
+          <Suspense fallback={<GameFallback />}>
+            <DailyGame />
+          </Suspense>
+        }
+      />
+      <Route path="/archive" element={<ArchiveIndex />} />
       <Route path="/landing" element={<Landing />} />
       <Route
         path="/play"

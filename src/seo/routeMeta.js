@@ -58,6 +58,13 @@ export const ROUTE_META = {
       'population density map',
     ],
   },
+  '/archive': {
+    path: '/archive',
+    title: 'Daily Map Archive | World of Maps',
+    description:
+      'Catch up on past World of Maps daily challenges. Replay any map from the last 30 days — archive plays don\'t affect your daily streak.',
+    keywords: ['daily map archive', 'past geography puzzles', 'world of maps archive'],
+  },
   '/blog': {
     path: '/blog',
     title: 'Blog — World Data Stories & Rankings | World of Maps',
@@ -92,4 +99,4 @@ export const ROUTE_META = {
 
 // Routes that are static enough to prerender to crawler-visible HTML at build time.
 // The game routes ('/', '/play') stay client-rendered (they need the browser + live data).
-export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/atlas', '/blog']
+export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/atlas', '/blog', '/archive']

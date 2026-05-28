@@ -347,14 +347,40 @@ export function markTodayAsPlayed() {
   storage.setItem('worldofmaps_last_played_day', todayIndex.toString())
 }
 
-// Get dataset by specific date (for testing/admin)
+// Get dataset by specific date (for past-day archive plays).
+// Returns the dataset with challengeInfo populated so DailyGame can read isPast / challengeDate.
 export async function getDatasetByDate(dateString) {
   const targetDate = new Date(dateString + 'T00:00:00Z')
+  if (isNaN(targetDate.getTime())) throw new Error(`Invalid date: ${dateString}`)
+
   const epochStart = new Date('1970-01-01T00:00:00Z')
-  const dayIndex = Math.floor((targetDate.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
-  
-  const datasetId = getDatasetForDay(dayIndex % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS)
-  return await fetchDataset(datasetId)
+  const fullDayIndex = Math.floor((targetDate.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
+  const cycleIndex = ((fullDayIndex % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) + CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+
+  const datasetId = getDatasetForDay(cycleIndex)
+  const dataset = await fetchDataset(datasetId, cycleIndex)
+  return {
+    ...dataset,
+    challengeInfo: {
+      dayIndex: cycleIndex,
+      challengeDate: dateString,
+      challengeId: `${datasetId}-d${fullDayIndex}`,
+      primaryId: datasetId,
+      isPast: true,
+    },
+  }
+}
+
+// Returns a YYYY-MM-DD string for the date that maps to a given days-since-epoch offset from today.
+// daysAgo=0 returns today's UTC date; positive integers return past dates. Used by the archive page
+// and the prerender script to enumerate past-day URLs.
+export function getDateStringForDaysAgo(daysAgo) {
+  const ms = Date.now() - daysAgo * 24 * 60 * 60 * 1000
+  const d = new Date(ms)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 // Admin function to force refresh today's dataset

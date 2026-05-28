@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
-import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
+import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate } from '../data/dailyChallenge'
 import { getLeaderboardData, getCalculatedStats } from '../data/gameStats'
 import StatsModal from './StatsModal'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
@@ -16,7 +17,21 @@ import './DailyGame.css'
 // Lazy load ShareSheet to improve initial page load performance
 const ShareSheet = lazy(() => import('./ShareSheet'))
 
+// Helper used by the archive banner: "2026-05-27" → "May 27, 2026".
+const ARCHIVE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+function formatArchiveDateLong(yyyyMmDd) {
+  const parts = String(yyyyMmDd || '').split('-')
+  if (parts.length !== 3) return yyyyMmDd
+  const mi = parseInt(parts[1], 10) - 1
+  if (isNaN(mi) || mi < 0 || mi > 11) return yyyyMmDd
+  return `${ARCHIVE_MONTHS[mi]} ${parseInt(parts[2], 10)}, ${parts[0]}`
+}
+
 function DailyGame() {
+  // When this component is mounted at /daily/:date, useParams returns the date — flipping us
+  // into past-day archive mode. At the home route '/' there is no :date param.
+  const { date: pastDate } = useParams()
+  const isPastDay = Boolean(pastDate)
   const [gameState, setGameState] = useState(null)
   const [showTooltips, setShowTooltips] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
@@ -119,8 +134,10 @@ function DailyGame() {
         
         // Dev log removed - prevents answer spoilers in production
         
-        const dataset = await getTodaysDataset()
-        
+        const dataset = isPastDay
+          ? await getDatasetByDate(pastDate)
+          : await getTodaysDataset()
+
         // Clear the slow load timer once data is fetched
         clearTimeout(slowLoadTimer)
         
@@ -130,7 +147,10 @@ function DailyGame() {
 
         // Attempt to load saved progress
         try {
-          const dayKey = `worldofmaps_daily_progress_${dataset.challengeInfo?.dayIndex || 'unknown'}`
+          // Past-day plays use a date-keyed namespace so they never collide with today's saved progress.
+          const dayKey = isPastDay
+            ? `worldofmaps_past_progress_${pastDate}`
+            : `worldofmaps_daily_progress_${dataset.challengeInfo?.dayIndex || 'unknown'}`
           const savedRaw = localStorage.getItem(dayKey)
           if (savedRaw) {
             const saved = JSON.parse(savedRaw)
@@ -145,7 +165,7 @@ function DailyGame() {
                 incorrectOptions: saved.incorrectOptions || [],
               }
               setGameState(restored)
-              if (restored.isComplete) {
+              if (restored.isComplete && !isPastDay) {
                 // Mark as played (in case) and show modal optionally
                 markTodayAsPlayed()
               }
@@ -261,7 +281,9 @@ function DailyGame() {
       // Persist progress after each guess
       try {
         const dayIndex = gameState.dataset.challengeInfo?.dayIndex
-        const dayKey = `worldofmaps_daily_progress_${dayIndex}`
+        const dayKey = isPastDay
+          ? `worldofmaps_past_progress_${pastDate}`
+          : `worldofmaps_daily_progress_${dayIndex}`
         const toSave = {
           datasetId: gameState.dataset.id,
           guesses: newGameState.guesses,
@@ -276,18 +298,21 @@ function DailyGame() {
       }
       
       if (newGameState.isComplete) {
-        finalizeGame(newGameState)
-        markTodayAsPlayed()
+        // Past-day plays don't touch the daily streak/histogram or get submitted to global stats.
+        finalizeGame(newGameState, { isDaily: !isPastDay })
+        if (!isPastDay) markTodayAsPlayed()
         const updatedStats = getLeaderboardData(newGameState.dataset)
         setStats(updatedStats)
-        // Refresh displayed streak + celebrate milestones (3, 7, 14, 30, 50, 100).
-        const calc = getCalculatedStats()
-        setCurrentStreak(calc.displayedStreak || 0)
-        if (newGameState.isWon && [3, 7, 14, 30, 50, 100].includes(calc.displayedStreak)) {
-          setTimeout(() => {
-            setStreakMilestoneToast(calc.displayedStreak)
-            setTimeout(() => setStreakMilestoneToast(null), 3500)
-          }, 1600)
+        if (!isPastDay) {
+          // Refresh displayed streak + celebrate milestones (3, 7, 14, 30, 50, 100).
+          const calc = getCalculatedStats()
+          setCurrentStreak(calc.displayedStreak || 0)
+          if (newGameState.isWon && [3, 7, 14, 30, 50, 100].includes(calc.displayedStreak)) {
+            setTimeout(() => {
+              setStreakMilestoneToast(calc.displayedStreak)
+              setTimeout(() => setStreakMilestoneToast(null), 3500)
+            }, 1600)
+          }
         }
         // Compute a single-line extremes summary
         try {
@@ -317,16 +342,19 @@ function DailyGame() {
             })
           }, 800)
         }
-        try {
-          submitGlobalResult({
-            datasetId: newGameState.dataset.id,
-            dayIndex: newGameState.dataset.challengeInfo?.dayIndex,
-            guessCount: newGameState.guesses.length,
-            isWon: newGameState.isWon,
-            durationMs: Date.now() - newGameState.startTime
-          })
-        } catch (e) {
-          console.warn('Submit global result failed', e)
+        // Don't submit past-day plays to global stats — they'd skew today's averages.
+        if (!isPastDay) {
+          try {
+            submitGlobalResult({
+              datasetId: newGameState.dataset.id,
+              dayIndex: newGameState.dataset.challengeInfo?.dayIndex,
+              guessCount: newGameState.guesses.length,
+              isWon: newGameState.isWon,
+              durationMs: Date.now() - newGameState.startTime
+            })
+          } catch (e) {
+            console.warn('Submit global result failed', e)
+          }
         }
       }
     }
@@ -345,6 +373,7 @@ function DailyGame() {
       challengeId: dataset.challengeInfo?.challengeId,
       durationMs: Date.now() - gameState.startTime,
       globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
+      dayDate: isPastDay ? pastDate : null,
     }
     setShareStatus('preparing')
     // Create 9:16 story image (no title reveal)
@@ -458,11 +487,12 @@ function DailyGame() {
   }, [showMenu])
 
   // On load after game state ready, if already played and game is complete show modal
+  // (only applies to today's daily — past-day plays can be re-finished any time).
   useEffect(() => {
-    if (gameState && gameState.isComplete && hasPlayedToday()) {
+    if (!isPastDay && gameState && gameState.isComplete && hasPlayedToday()) {
       setAlreadyPlayedModal(true)
     }
-  }, [gameState])
+  }, [gameState, isPastDay])
 
   // Check for overflow and add class for scroll indicator
   useEffect(() => {
@@ -543,8 +573,17 @@ function DailyGame() {
       <div className="daily-game">
         <div className="loading">
           <div className="loading-globe">🌍</div>
-          <div>Loading today's data challenge...</div>
-          <div className="loading-subtitle">Fetching live data from global sources</div>
+          {isPastDay ? (
+            <>
+              <div>Daily Map · {formatArchiveDateLong(pastDate)}</div>
+              <div className="loading-subtitle">Loading archived challenge…</div>
+            </>
+          ) : (
+            <>
+              <div>Loading today's data challenge...</div>
+              <div className="loading-subtitle">Fetching live data from global sources</div>
+            </>
+          )}
           {loadingSlowWarning && (
             <div className="loading-slow-warning">
               ⏱️ Taking longer than expected... Please hold on.
@@ -611,6 +650,36 @@ function DailyGame() {
       <div className="top-left-title">
         worldofthemaps
       </div>
+
+      {/* Archive-mode banner — only when replaying a past day */}
+      {isPastDay && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 56,
+            left: 16,
+            zIndex: 110,
+            background: 'rgba(11, 37, 69, 0.85)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 202, 26, 0.4)',
+            padding: '6px 12px',
+            borderRadius: 999,
+            fontSize: '0.78em',
+            color: '#ffca1a',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          📅 Archive · {formatArchiveDateLong(pastDate)}
+          <Link
+            to="/archive"
+            style={{ color: '#cbd5e0', textDecoration: 'underline', fontSize: '0.85em' }}
+          >
+            browse
+          </Link>
+        </div>
+      )}
       
       {/* Game Instructions Header */}
       <div className={`game-instructions ${!showInstructions ? 'fade-out' : ''}`}>
@@ -826,6 +895,7 @@ function DailyGame() {
             challengeId: gameState.dataset.challengeInfo?.challengeId,
             durationMs: Date.now() - gameState.startTime,
             globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
+            dayDate: isPastDay ? pastDate : null,
           }}
         />
       </Suspense>
