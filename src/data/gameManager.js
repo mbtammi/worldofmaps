@@ -125,8 +125,9 @@ export const processGuess = (gameState, selectedOption) => {
 
 // toggleHints removed
 
-// Finalize game and update statistics
-export const finalizeGame = (gameState) => {
+// Finalize game and update statistics.
+// Pass { isDaily: false } from Free Play so it doesn't update the daily streak/histogram.
+export const finalizeGame = (gameState, opts = {}) => {
   if (!gameState.isComplete) {
     console.warn('Attempting to finalize incomplete game')
     return gameState
@@ -153,7 +154,7 @@ export const finalizeGame = (gameState) => {
     datasetId: gameState.dataset.id
   }
 
-  updateStatsAfterGame(gameResult)
+  updateStatsAfterGame(gameResult, opts)
   return gameState
 }
 

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { hasPlayedToday, markTodayAsPlayed } from '../data/dailyChallenge'
-import { getLeaderboardData } from '../data/gameStats'
+import { getLeaderboardData, getCalculatedStats } from '../data/gameStats'
+import StatsModal from './StatsModal'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
@@ -42,6 +43,9 @@ function DailyGame() {
   const [featureHasNew, setFeatureHasNew] = useState(false)
   const [loadingSlowWarning, setLoadingSlowWarning] = useState(false)
   const [missedGuessToast, setMissedGuessToast] = useState(false)
+  const [statsModalOpen, setStatsModalOpen] = useState(false)
+  const [streakMilestoneToast, setStreakMilestoneToast] = useState(null)
+  const [currentStreak, setCurrentStreak] = useState(0)
 
   useEffect(() => {
     async function checkNewFeatures() {
@@ -74,6 +78,14 @@ function DailyGame() {
   useEffect(() => {
     const theme = initializeTheme()
     setCurrentTheme(theme)
+  }, [])
+
+  // Load current daily streak on mount (uses the lapse-aware getDisplayedStreak).
+  useEffect(() => {
+    try {
+      const calc = getCalculatedStats()
+      setCurrentStreak(calc.displayedStreak || 0)
+    } catch (_) { /* ignore */ }
   }, [])
 
   // Remove handle pulse after a few seconds
@@ -268,6 +280,15 @@ function DailyGame() {
         markTodayAsPlayed()
         const updatedStats = getLeaderboardData(newGameState.dataset)
         setStats(updatedStats)
+        // Refresh displayed streak + celebrate milestones (3, 7, 14, 30, 50, 100).
+        const calc = getCalculatedStats()
+        setCurrentStreak(calc.displayedStreak || 0)
+        if (newGameState.isWon && [3, 7, 14, 30, 50, 100].includes(calc.displayedStreak)) {
+          setTimeout(() => {
+            setStreakMilestoneToast(calc.displayedStreak)
+            setTimeout(() => setStreakMilestoneToast(null), 3500)
+          }, 1600)
+        }
         // Compute a single-line extremes summary
         try {
           const arr = (newGameState.dataset.data || []).filter(d => typeof d.value === 'number')
@@ -545,6 +566,25 @@ function DailyGame() {
           <span style={{opacity:0.75}}>✅ {gameState?.dataset?.title}</span>
         </div>
       )}
+      {/* Streak milestone toast */}
+      {streakMilestoneToast && (
+        <div style={{
+          position: 'fixed',
+          top: 56,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'linear-gradient(135deg, #ff7a18, #ffca1a)',
+          color: '#0b2545',
+          padding: '10px 20px',
+          borderRadius: 28,
+          fontSize: '0.95em',
+          fontWeight: 700,
+          zIndex: 165,
+          boxShadow: '0 6px 20px rgba(255, 160, 60, 0.5)',
+        }}>
+          🔥 {streakMilestoneToast}-day streak!
+        </div>
+      )}
       {/* Missed guess toast */}
       {missedGuessToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>
@@ -584,6 +624,14 @@ function DailyGame() {
         </button>
         <button className="control-btn" onClick={handleThemeSwitch}>
           {getAllThemes().find(t => t.id === currentTheme)?.icon || '🌙'}
+        </button>
+        <button
+          className="control-btn"
+          onClick={() => setStatsModalOpen(true)}
+          aria-label="Stats"
+          title="Stats"
+        >
+          📊
         </button>
         <div className="menu-container">
           <button className="control-btn" onClick={() => { setShowMenu(!showMenu); }} style={{position:'relative'}}>
@@ -634,6 +682,21 @@ function DailyGame() {
       {/* Right Middle - Leaderboard */}
       <div className="right-leaderboard">
         <h4>Game Stats</h4>
+        {currentStreak > 0 && (
+          <div
+            className="stat-item"
+            style={{
+              fontWeight: 700,
+              color: '#ffca1a',
+              cursor: 'pointer',
+            }}
+            onClick={() => setStatsModalOpen(true)}
+            title="View stats"
+          >
+            <span>🔥 Streak</span>
+            <span>{currentStreak}</span>
+          </div>
+        )}
         {stats.map((stat, index) => (
           <div key={index} className="stat-item">
             <span>{stat.label}:</span>
@@ -769,6 +832,20 @@ function DailyGame() {
     )}
     </div>
     <FeatureRequestsModal open={featureModalOpen} onClose={()=> setFeatureModalOpen(false)} />
+    <StatsModal
+      open={statsModalOpen}
+      onClose={() => setStatsModalOpen(false)}
+      currentGuessBucket={
+        gameState?.isComplete && gameState.isWon
+          ? (gameState.guesses.length > 6 ? '6+' : String(gameState.guesses.length))
+          : null
+      }
+      onShare={
+        gameState?.isComplete
+          ? () => { setStatsModalOpen(false); handleShare() }
+          : null
+      }
+    />
     </>
   )
 }

@@ -159,7 +159,7 @@ export default function FreePlayGame() {
     
     setGameState(newState)
     if (newState.isComplete) {
-      finalizeGame(newState)
+      finalizeGame(newState, { isDaily: false })
       setStats(getLeaderboardData(newState.dataset))
     }
   }

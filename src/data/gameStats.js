@@ -53,8 +53,9 @@ export const saveStats = (stats) => {
   }
 }
 
-// Update stats after a game completion
-export const updateStatsAfterGame = (gameResult) => {
+// Update stats after a game completion.
+// Pass { isDaily: false } for Free Play so it doesn't pollute the daily streak / histogram.
+export const updateStatsAfterGame = (gameResult, { isDaily = true } = {}) => {
   const {
     isWon,
     guessCount,
@@ -65,30 +66,44 @@ export const updateStatsAfterGame = (gameResult) => {
     hintsRevealed = 0
   } = gameResult
 
+  // Free Play is meant to be casual / unlimited — leave the daily counters and streak alone.
+  // We still update per-dataset stats below so users can see their history per indicator.
   const stats = getStats()
   const today = new Date().toDateString()
-  
-  // Update basic counters
-  stats.totalGames += 1
-  stats.totalGuesses += guessCount
-  if (durationMs) {
-    stats.totalTimeMs += durationMs
-    if (stats.fastestMs === null || durationMs < stats.fastestMs) stats.fastestMs = durationMs
-  }
-  stats.lastPlayedDate = today
-  stats.playedToday = true
+  const yesterday = new Date(Date.now() - 86400000).toDateString()
 
-  if (isWon) {
-    stats.totalWins += 1
-    stats.winStreak += 1
-    stats.maxWinStreak = Math.max(stats.maxWinStreak, stats.winStreak)
-    if (guessCount === 1) stats.firstTryWins += 1
-    
-    // Track wins by guess count
-    const guessKey = guessCount > 6 ? '6+' : guessCount.toString()
-    stats.gamesWonByGuesses[guessKey] += 1
-  } else {
-    stats.winStreak = 0
+  if (isDaily) {
+    // Daily counters
+    stats.totalGames += 1
+    stats.totalGuesses += guessCount
+    if (durationMs) {
+      stats.totalTimeMs += durationMs
+      if (stats.fastestMs === null || durationMs < stats.fastestMs) stats.fastestMs = durationMs
+    }
+
+    if (isWon) {
+      stats.totalWins += 1
+      // Streak continuity: only extend the streak if the previous play was today or yesterday.
+      // Skipping one or more days resets the streak to 1 (today restarts it from scratch).
+      const prev = stats.lastPlayedDate
+      if (prev === today || prev === yesterday || prev == null) {
+        stats.winStreak += 1
+      } else {
+        stats.winStreak = 1
+      }
+      stats.maxWinStreak = Math.max(stats.maxWinStreak, stats.winStreak)
+      if (guessCount === 1) stats.firstTryWins += 1
+
+      // Track wins by guess count
+      const guessKey = guessCount > 6 ? '6+' : guessCount.toString()
+      stats.gamesWonByGuesses[guessKey] += 1
+    } else {
+      // Any daily loss resets the streak
+      stats.winStreak = 0
+    }
+
+    stats.lastPlayedDate = today
+    stats.playedToday = true
   }
 
   // Update dataset-specific stats
@@ -164,6 +179,18 @@ export const updateStatsAfterGame = (gameResult) => {
   return stats
 }
 
+// Returns the streak the UI should display right now. If the user last played longer ago
+// than yesterday, the stored streak has lapsed and we show 0 — even though winStreak still
+// holds the old value until a new daily play overwrites it.
+export const getDisplayedStreak = (stats = null) => {
+  const s = stats || getStats()
+  if (!s.lastPlayedDate || !s.winStreak) return 0
+  const today = new Date().toDateString()
+  const yesterday = new Date(Date.now() - 86400000).toDateString()
+  if (s.lastPlayedDate === today || s.lastPlayedDate === yesterday) return s.winStreak
+  return 0
+}
+
 // Calculate derived stats
 export const getCalculatedStats = (stats = null) => {
   const currentStats = stats || getStats()
@@ -177,6 +204,7 @@ export const getCalculatedStats = (stats = null) => {
   const avgTimeMs = currentStats.totalWins ? Math.round(currentStats.totalTimeMs / currentStats.totalWins) : null
   const hintUsageRate = currentStats.totalGames ? +(currentStats.gamesWithHints / currentStats.totalGames * 100).toFixed(1) : 0
   const medianGuesses = computeMedianFromHistogram(currentStats.gamesWonByGuesses, currentStats.totalWins)
+  const displayedStreak = getDisplayedStreak(currentStats)
   return {
     ...currentStats,
     winPercentage,
@@ -184,7 +212,8 @@ export const getCalculatedStats = (stats = null) => {
     firstTryRate,
     avgTimeMs,
     hintUsageRate,
-    medianGuesses
+    medianGuesses,
+    displayedStreak,
   }
 }
 
