@@ -557,6 +557,29 @@ export async function fetchDataset(datasetId, dayIndex = null) {
     return cached
   }
 
+  // SNAPSHOT-FIRST PATH: try the build-time snapshot in public/data/atlas/<id>.json.
+  // Snapshots are produced by `npm run atlas:data`, committed to the repo, and shipped
+  // to the CDN. When present, they're the fastest + most reliable source (same-origin,
+  // no API proxy, no CORS, no rate limits) and they're the only practical way to use
+  // OWID Grapher datasets at runtime (the legacy /api/fetchData?source=owid path points
+  // at the archived owid-datasets repo). Any miss / parse error falls through to the
+  // live-fetch logic below so nothing regresses for datasets without a snapshot yet.
+  try {
+    const snapResp = await fetch(`/data/atlas/${datasetId}.json`)
+    if (snapResp.ok) {
+      const snapshot = await snapResp.json()
+      if (snapshot?.data?.length >= MIN_COUNTRIES_REQUIRED) {
+        devLog(`📦 Snapshot hit for ${datasetId}: ${snapshot.data.length} countries`)
+        const dataset = generateDatasetMetadata(datasetId, snapshot.data, snapshot.source, dayIndex)
+        if (snapshot.funFact) dataset.funFact = snapshot.funFact
+        setCachedData(cacheKey, dataset)
+        return dataset
+      }
+    }
+  } catch (_) {
+    devLog(`Snapshot miss for ${datasetId}, falling back to live fetch`)
+  }
+
   try {
     devLog(`🔄 Fetching dataset: ${datasetId}`)
     

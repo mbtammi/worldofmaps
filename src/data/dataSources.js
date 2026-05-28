@@ -153,8 +153,17 @@ export const DATASET_CATEGORIES = {
     name: 'Culture & Lifestyle',
     icon: '🎭',
     datasets: [
-      'coffee-consumption',
       'alcohol-consumption'
+    ]
+  },
+  WELLBEING_GOVERNANCE: {
+    name: 'Wellbeing & Governance',
+    icon: '⚖️',
+    datasets: [
+      'happiness-index',
+      'democracy-index',
+      'press-freedom',
+      'corruption-perception',
     ]
   },
   TOURISM: {
@@ -490,20 +499,16 @@ export const WORLD_BANK_INDICATORS = {
   'gender-parity-index-education': 'SE.ENR.PRIM.FM.ZS'
 }
 
-// Our World in Data Dataset Mappings (Conservative list of known datasets)
+// Our World in Data dataset mappings. Values are Grapher slugs — fetched at build time from
+// https://ourworldindata.org/grapher/<slug>.csv (the legacy owid-datasets GitHub repo is
+// archived; Grapher CSVs are the current stable export endpoint). Datasets that fail the
+// build-time quality gate are filtered out of the daily rotation automatically.
 export const OWID_DATASETS = {
-  // Focus on datasets we know exist or can reliably fallback
-  // Comment out problematic ones until we can verify paths
-  // 'happiness-index': 'happiness-cantril-ladder',
-  // 'democracy-index': 'democracy-index',
-  // 'corruption-index': 'corruption-perception-index', 
-  // 'press-freedom': 'press-freedom-index',
-  // 'human-rights-index': 'human-rights-protection-index',
-  // 'peace-index': 'global-peace-index',
-  // 'innovation-index': 'global-innovation-index',
-  'coffee-consumption': 'coffee-per-capita',
-  'alcohol-consumption': 'alcohol-consumption-per-capita'
-  // 'mental-health-disorders': 'prevalence-of-mental-health-disorders'
+  'happiness-index': 'happiness-cantril-ladder',
+  'democracy-index': 'democracy-index-eiu',
+  'press-freedom': 'press-freedom-index-rsf',
+  'corruption-perception': 'corruption-perception-index',
+  'alcohol-consumption': 'total-alcohol-consumption-per-capita-litres-of-pure-alcohol',
 }
 
 // Generate a complete dataset list (100+ datasets)

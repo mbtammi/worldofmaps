@@ -21,6 +21,13 @@
     "year": 2023
   },
   {
+    "id": "alcohol-consumption",
+    "title": "Alcohol Consumption",
+    "category": "Culture & Lifestyle",
+    "count": 187,
+    "year": 2020
+  },
+  {
     "id": "birth-rate",
     "title": "Birth Rate",
     "category": "Demographics & Society",
@@ -42,6 +49,13 @@
     "year": 2024
   },
   {
+    "id": "corruption-perception",
+    "title": "Corruption Perception",
+    "category": "Wellbeing & Governance",
+    "count": 180,
+    "year": 2024
+  },
+  {
     "id": "crop-production-index",
     "title": "Crop Production Index",
     "category": "Food & Agriculture",
@@ -53,6 +67,13 @@
     "title": "Death Rate",
     "category": "Demographics & Society",
     "count": 217,
+    "year": 2024
+  },
+  {
+    "id": "democracy-index",
+    "title": "Democracy Index",
+    "category": "Wellbeing & Governance",
+    "count": 166,
     "year": 2024
   },
   {
@@ -201,6 +222,13 @@
     "category": "Economy & Development",
     "count": 159,
     "year": 2024
+  },
+  {
+    "id": "happiness-index",
+    "title": "Happiness Index",
+    "category": "Wellbeing & Governance",
+    "count": 163,
+    "year": 2025
   },
   {
     "id": "healthcare-expenditure",
@@ -411,6 +439,13 @@
     "category": "Demographics & Society",
     "count": 217,
     "year": 2024
+  },
+  {
+    "id": "press-freedom",
+    "title": "Press Freedom",
+    "category": "Wellbeing & Governance",
+    "count": 176,
+    "year": 2021
   },
   {
     "id": "proportion-seats-held-women-parliament",

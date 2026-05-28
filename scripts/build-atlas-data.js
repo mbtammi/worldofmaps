@@ -124,6 +124,67 @@ async function fetchRest(kind) {
   return out
 }
 
+// Our World in Data — fetch the Grapher CSV directly (server-side, no CORS). CSV shape is
+// always: Entity,Code,Year,<data column>. We take the latest non-null year per ISO3 country
+// and reject Entity rows that aren't real countries (using the same real-country set as WB).
+async function fetchOWIDGrapher(slug) {
+  const countries = await realCountryISO3()
+  const url = `https://ourworldindata.org/grapher/${slug}.csv`
+  const r = await fetch(url)
+  if (!r.ok) throw new Error(`OWID HTTP ${r.status} (slug: ${slug})`)
+  const csv = await r.text()
+  const lines = csv.split('\n').filter((l) => l.trim())
+  if (lines.length < 2) throw new Error('Empty OWID CSV')
+  const headers = lines[0].split(',').map((h) => h.trim())
+  const entityIdx = headers.findIndex((h) => h.toLowerCase() === 'entity')
+  const codeIdx = headers.findIndex((h) => h.toLowerCase() === 'code')
+  const yearIdx = headers.findIndex((h) => h.toLowerCase() === 'year')
+  if (entityIdx < 0 || codeIdx < 0 || yearIdx < 0) {
+    throw new Error(`OWID columns missing (have: ${headers.join('|')})`)
+  }
+  // Find the data column robustly: scan columns after Year and pick the first one whose
+  // sample rows are numeric. Some OWID CSVs append a trailing string annotation column
+  // (e.g. "World region according to OWID") that would silently produce 0 countries if we
+  // assumed the data lives in the last column.
+  let dataIdx = -1
+  const sampleRows = lines.slice(1, Math.min(80, lines.length))
+  for (let col = yearIdx + 1; col < headers.length; col++) {
+    let numericHits = 0
+    for (const row of sampleRows) {
+      const parts = row.split(',')
+      if (parts.length <= col) continue
+      const v = parts[col]
+      if (v && v.trim() && !Number.isNaN(parseFloat(v))) numericHits++
+    }
+    if (numericHits >= 5) { dataIdx = col; break }
+  }
+  if (dataIdx < 0) {
+    throw new Error(`OWID: no numeric data column found (headers: ${headers.join('|')})`)
+  }
+  const byCountry = new Map()
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(',')
+    if (parts.length <= dataIdx) continue
+    const code = parts[codeIdx]
+    if (!code || code.length !== 3 || !countries.has(code)) continue
+    const yr = parseInt(parts[yearIdx], 10)
+    if (Number.isNaN(yr)) continue
+    const val = parseFloat(parts[dataIdx])
+    if (Number.isNaN(val)) continue
+    const cur = byCountry.get(code)
+    if (!cur || yr > cur.year) {
+      byCountry.set(code, {
+        iso_a2: code.slice(0, 2),
+        iso_a3: code,
+        name: parts[entityIdx],
+        value: val,
+        year: yr,
+      })
+    }
+  }
+  return [...byCountry.values()]
+}
+
 function computeStats(data) {
   const sorted = [...data].sort((a, b) => b.value - a.value)
   const sum = data.reduce((acc, d) => acc + d.value, 0)
@@ -151,8 +212,11 @@ async function buildOne(d) {
     } else if (REST_KINDS[id]) {
       data = await fetchRest(REST_KINDS[id])
       source = 'REST Countries'
+    } else if (OWID_DATASETS[id]) {
+      data = await fetchOWIDGrapher(OWID_DATASETS[id])
+      source = 'Our World in Data'
     } else {
-      return null // OWID handled separately / skipped if archived
+      return null
     }
     if (!data || data.length < MIN_COUNTRIES) {
       console.warn(`  ✗ ${id}: only ${data?.length || 0} countries (min ${MIN_COUNTRIES})`)
