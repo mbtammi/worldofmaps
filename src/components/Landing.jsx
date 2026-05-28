@@ -105,9 +105,9 @@ function Landing() {
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">💡</span>
-              <h3>Progressive Learning Hints</h3>
-              <p>Optional contextual hints reinforce geography and data literacy without spoiling the answer.</p>
+              <span className="landing-feature-icon">📤</span>
+              <h3>Spoiler-Safe Sharing</h3>
+              <p>Share an emoji grid of your result without revealing the answer — perfect for daily bragging rights that don't ruin the puzzle for friends.</p>
             </div>
             
             <div className="landing-feature-card">

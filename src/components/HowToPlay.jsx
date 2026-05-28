@@ -26,8 +26,8 @@ function HowToPlay() {
           </div>
           
           <div className="step">
-            <h2>3. 💡 Use Adaptive Hints</h2>
-            <p>Each incorrect guess unlocks progressively stronger contextual hints—region bias, thematic clues or value range guidance—reinforcing learning rather than random trial.</p>
+            <h2>3. 🎯 Narrow It Down</h2>
+            <p>If your first guess is wrong, the remaining options stay on screen so you can refine your thinking. The fewer tries you need, the better your score — and you carry that intuition into the next day's map.</p>
           </div>
           
           <div className="step">
@@ -41,7 +41,7 @@ function HowToPlay() {
           <ul>
             <li>Trace continent-by-continent intensity—does Africa lag or lead? Are Nordics clustered?</li>
             <li>Relate patterns to development, climate zones, resource access or demographics.</li>
-            <li>Use hints strategically instead of brute forcing unrelated categories.</li>
+            <li>Eliminate quickly: rule out options that clearly don't match the regional pattern.</li>
             <li>Remember high-income economies often correlate with health, internet and education metrics.</li>
           </ul>
         </div>

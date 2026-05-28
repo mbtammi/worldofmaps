@@ -24,7 +24,7 @@ function Footer() {
     <footer className="footer">
       <div className="footer-container">
         <div className="footer-left">
-          <p className="footer-copyright">© 2025 WorldOfTheMaps - Guess the Globe, Master the World!</p>
+          <p className="footer-copyright">© 2026 WorldOfTheMaps - Guess the Globe, Master the World!</p>
         </div>
         
         <div className="footer-right" aria-label="Site navigation footer links">
