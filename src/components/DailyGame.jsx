@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
-import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate } from '../data/dailyChallenge'
+import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate, getDatasetIdForDate, getDateStringForDaysAgo } from '../data/dailyChallenge'
 import { getLeaderboardData, getCalculatedStats } from '../data/gameStats'
 import StatsModal from './StatsModal'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
@@ -61,6 +61,7 @@ function DailyGame() {
   const [statsModalOpen, setStatsModalOpen] = useState(false)
   const [streakMilestoneToast, setStreakMilestoneToast] = useState(null)
   const [currentStreak, setCurrentStreak] = useState(0)
+  const [yesterdayInfo, setYesterdayInfo] = useState(null)
 
   useEffect(() => {
     async function checkNewFeatures() {
@@ -102,6 +103,35 @@ function DailyGame() {
       setCurrentStreak(calc.displayedStreak || 0)
     } catch (_) { /* ignore */ }
   }, [])
+
+  // Surface yesterday's dataset + global stats on the home page (today only, not in past-day mode).
+  // Pulls from the same snapshot JSON the daily game uses + the daily-stats API we already call.
+  // The CTA links to the past-days archive route we shipped in #3.
+  useEffect(() => {
+    if (isPastDay) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const ydDate = getDateStringForDaysAgo(1)
+        const { id: ydId, cycleIndex: ydCycleIndex } = getDatasetIdForDate(ydDate)
+        const [snapResp, gStats] = await Promise.all([
+          fetch(`/data/atlas/${ydId}.json`),
+          fetchDailyGlobalStats(ydCycleIndex).catch(() => null),
+        ])
+        if (cancelled || !snapResp.ok) return
+        const snapshot = await snapResp.json()
+        if (cancelled) return
+        setYesterdayInfo({
+          date: ydDate,
+          title: snapshot.title,
+          avg: gStats && typeof gStats.avgGuesses === 'number'
+            ? Math.round(gStats.avgGuesses * 10) / 10
+            : null,
+        })
+      } catch (_) { /* silent */ }
+    })()
+    return () => { cancelled = true }
+  }, [isPastDay])
 
   // Remove handle pulse after a few seconds
   useEffect(()=>{
@@ -782,6 +812,39 @@ function DailyGame() {
           <span>Max</span>
         </div>
   <div style={{marginTop:4,fontSize:'0.65em',textAlign:'center',opacity:0.85}}>Gray = No data</div>
+        {yesterdayInfo && !isPastDay && (
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 10,
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+              fontSize: '0.78em',
+              lineHeight: 1.4,
+            }}
+          >
+            <div style={{ opacity: 0.55, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.78em', marginBottom: 2 }}>
+              Yesterday
+            </div>
+            <div style={{ fontWeight: 600 }}>{yesterdayInfo.title}</div>
+            {yesterdayInfo.avg != null && (
+              <div style={{ opacity: 0.7, fontSize: '0.88em' }}>
+                Avg {yesterdayInfo.avg} guesses
+              </div>
+            )}
+            <Link
+              to={`/daily/${yesterdayInfo.date}`}
+              style={{
+                display: 'inline-block',
+                marginTop: 6,
+                color: '#7fd1ff',
+                textDecoration: 'none',
+                fontSize: '0.92em',
+              }}
+            >
+              Play it →
+            </Link>
+          </div>
+        )}
       </div>
       
       {/* Left Side - Game Options */}

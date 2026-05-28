@@ -371,6 +371,18 @@ export async function getDatasetByDate(dateString) {
   }
 }
 
+// Lightweight rotation lookup: given a YYYY-MM-DD string, return the dataset id (and cycle
+// index) that maps to that date — without doing any network fetch. Used by the home page's
+// "Yesterday's reveal" feature to surface the previous day's dataset title + stats.
+export function getDatasetIdForDate(dateString) {
+  const targetDate = new Date(dateString + 'T00:00:00Z')
+  if (isNaN(targetDate.getTime())) throw new Error(`Invalid date: ${dateString}`)
+  const epochStart = new Date('1970-01-01T00:00:00Z')
+  const fullDayIndex = Math.floor((targetDate.getTime() - epochStart.getTime()) / (1000 * 60 * 60 * 24))
+  const cycleIndex = ((fullDayIndex % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) + CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS) % CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS
+  return { id: getDatasetForDay(cycleIndex), cycleIndex, fullDayIndex }
+}
+
 // Returns a YYYY-MM-DD string for the date that maps to a given days-since-epoch offset from today.
 // daysAgo=0 returns today's UTC date; positive integers return past dates. Used by the archive page
 // and the prerender script to enumerate past-day URLs.
