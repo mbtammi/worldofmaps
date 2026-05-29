@@ -64,6 +64,15 @@ function DailyGame() {
   const [currentStreak, setCurrentStreak] = useState(0)
   const [yesterdayInfo, setYesterdayInfo] = useState(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  // Hard mode (lazy init from localStorage so it's available on first render).
+  // Toggling reloads the page so the new option count takes effect cleanly.
+  const [hardMode] = useState(() => {
+    try { return localStorage.getItem('worldofthemaps_hard_mode') === '1' } catch { return false }
+  })
+  const toggleHardMode = () => {
+    try { localStorage.setItem('worldofthemaps_hard_mode', hardMode ? '0' : '1') } catch (_) {}
+    window.location.reload()
+  }
 
   useEffect(() => {
     async function checkNewFeatures() {
@@ -184,12 +193,31 @@ function DailyGame() {
         
         // Dev log removed - prevents answer spoilers in production
         
-        const dataset = isPastDay
+        const rawDataset = isPastDay
           ? await getDatasetByDate(pastDate)
           : await getTodaysDataset()
 
         // Clear the slow load timer once data is fetched
         clearTimeout(slowLoadTimer)
+
+        // Hard mode (today only): trim dataset.options from 10 → 4 (3 wrong + 1 correct,
+        // shuffled). The game's existing isComplete logic kicks in naturally because
+        // wrong-guess elimination still reduces availableOptions toward 1.
+        let dataset = rawDataset
+        if (hardMode && !isPastDay && Array.isArray(rawDataset.options) && rawDataset.options.length > 4) {
+          const correctAnswer = rawDataset.correctAnswers?.[0] || ''
+          const idx = rawDataset.options.findIndex(o => o.toLowerCase() === correctAnswer.toLowerCase())
+          if (idx >= 0) {
+            const correctOpt = rawDataset.options[idx]
+            const wrongs = rawDataset.options.filter((_, i) => i !== idx).slice(0, 3)
+            const trimmed = [...wrongs, correctOpt]
+            for (let i = trimmed.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1))
+              ;[trimmed[i], trimmed[j]] = [trimmed[j], trimmed[i]]
+            }
+            dataset = { ...rawDataset, options: trimmed }
+          }
+        }
         
         // Dev log removed - prevents revealing dataset title in production
         
@@ -198,9 +226,10 @@ function DailyGame() {
         // Attempt to load saved progress
         try {
           // Past-day plays use a date-keyed namespace so they never collide with today's saved progress.
+          // Hard-mode plays get their own namespace too, so users can switch modes without losing state.
           const dayKey = isPastDay
             ? `worldofmaps_past_progress_${pastDate}`
-            : `worldofmaps_daily_progress_${dataset.challengeInfo?.dayIndex || 'unknown'}`
+            : `worldofmaps_daily_progress_${hardMode ? 'hard_' : ''}${dataset.challengeInfo?.dayIndex || 'unknown'}`
           const savedRaw = localStorage.getItem(dayKey)
           if (savedRaw) {
             const saved = JSON.parse(savedRaw)
@@ -333,7 +362,7 @@ function DailyGame() {
         const dayIndex = gameState.dataset.challengeInfo?.dayIndex
         const dayKey = isPastDay
           ? `worldofmaps_past_progress_${pastDate}`
-          : `worldofmaps_daily_progress_${dayIndex}`
+          : `worldofmaps_daily_progress_${hardMode ? 'hard_' : ''}${dayIndex}`
         const toSave = {
           datasetId: gameState.dataset.id,
           guesses: newGameState.guesses,
@@ -424,6 +453,7 @@ function DailyGame() {
       durationMs: Date.now() - gameState.startTime,
       globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
       dayDate: isPastDay ? pastDate : null,
+      mode: hardMode ? 'hard' : 'normal',
     }
     setShareStatus('preparing')
     // Create 9:16 story image (no title reveal)
@@ -790,8 +820,15 @@ function DailyGame() {
               >
                 🎨 Theme: {getAllThemes().find(t => t.id === currentTheme)?.name || 'Dark'}
               </button> */}
-              <button 
-                className="menu-item" 
+              <button
+                className="menu-item"
+                onClick={toggleHardMode}
+                title="Hard mode shows only 4 options (3 wrong + 1 correct)"
+              >
+                🎯 Hard mode: {hardMode ? 'On' : 'Off'}
+              </button>
+              <button
+                className="menu-item"
                 onClick={() => { setFeatureModalOpen(true); setFeatureHasNew(false); setShowMenu(false); }}
               >
                 ❗ Feature Requests
@@ -982,6 +1019,7 @@ function DailyGame() {
             durationMs: Date.now() - gameState.startTime,
             globalAvg: typeof globalAvg === 'number' ? globalAvg : null,
             dayDate: isPastDay ? pastDate : null,
+            mode: hardMode ? 'hard' : 'normal',
           }}
         />
       </Suspense>

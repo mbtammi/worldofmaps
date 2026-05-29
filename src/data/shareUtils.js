@@ -9,9 +9,13 @@
 // - Packages like react-share only open URL/text-based share intents (Twitter/X, WhatsApp, Telegram, etc.) and cannot push a generated canvas image to stories.
 // - We therefore provide both: system share attempt + per-platform URL links + save image fallback.
 
-// Total options the daily challenge presents. The share grid is fixed-width at this size
-// so the visual fingerprint is consistent across days regardless of how many guesses were used.
-const SHARE_GRID_SIZE = 10
+// Total options the daily challenge presents — varies by mode:
+//   normal mode = 10 options (default)
+//   hard mode   = 4 options (3 wrong + 1 correct)
+// The share grid is fixed-width at this size per mode so the visual fingerprint is
+// consistent across days within the same mode.
+const SHARE_GRID_SIZE_NORMAL = 10
+const SHARE_GRID_SIZE_HARD = 4
 
 function formatDurationShort(ms) {
   if (!ms || ms < 0) return ''
@@ -22,7 +26,7 @@ function formatDurationShort(ms) {
   return s === 0 ? `${m}m` : `${m}m ${s}s`
 }
 
-function buildGuessGrid(guesses, isWon, total = SHARE_GRID_SIZE) {
+function buildGuessGrid(guesses, isWon, total) {
   const count = Array.isArray(guesses) ? guesses.length : 0
   const symbols = []
   for (let i = 0; i < Math.min(count, total); i++) {
@@ -44,17 +48,21 @@ function formatArchiveDate(yyyyMmDd) {
 }
 
 export function generateShareText(result) {
-  // result: { isWon, guesses, guessCount, dayIndex, durationMs, globalAvg?, dayDate? }
+  // result: { isWon, guesses, guessCount, dayIndex, durationMs, globalAvg?, dayDate?, mode? }
   // NOTE: deliberately does NOT include `datasetTitle` — the share must tease the puzzle,
   // not spoil it for the next reader. The 9:16 story image (createStoryShareImage) is also
   // built to omit the title.
   // dayDate (YYYY-MM-DD) is set for past-day archive plays so the share is dated, not Day-numbered.
-  const dayStr = result.dayDate
+  // mode === 'hard' switches the grid + score to /4 and adds a 🎯 Hard tag.
+  const isHard = result.mode === 'hard'
+  const gridSize = isHard ? SHARE_GRID_SIZE_HARD : SHARE_GRID_SIZE_NORMAL
+  const baseDay = result.dayDate
     ? `📅 ${formatArchiveDate(result.dayDate)} (archive)`
     : result.dayIndex != null
       ? `Day ${result.dayIndex}`
       : 'Free Play'
-  const scoreStr = result.isWon ? `${result.guessCount}/${SHARE_GRID_SIZE}` : `X/${SHARE_GRID_SIZE}`
+  const dayStr = isHard ? `${baseDay} · 🎯 Hard` : baseDay
+  const scoreStr = result.isWon ? `${result.guessCount}/${gridSize}` : `X/${gridSize}`
   const timeStr = formatDurationShort(result.durationMs)
   const lineTwoParts = [scoreStr]
   if (timeStr) lineTwoParts.push(timeStr)
@@ -62,7 +70,7 @@ export function generateShareText(result) {
   const lines = [
     `🌍 World of Maps · ${dayStr}`,
     lineTwoParts.join(' · '),
-    buildGuessGrid(result.guesses, result.isWon),
+    buildGuessGrid(result.guesses, result.isWon, gridSize),
   ]
 
   if (
