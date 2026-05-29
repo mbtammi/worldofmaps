@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "node scripts/build-blog-data.js && vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "build": "node scripts/build-og-image.mjs && node scripts/build-blog-data.js && vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "build:client": "vite build",
+    "og:build": "node scripts/build-og-image.mjs",
     "atlas:data": "node scripts/build-atlas-data.js",
     "year:data": "node scripts/build-year-data.js",
     "blog:listicles": "node scripts/generate-listicles.js",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
