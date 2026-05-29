@@ -9,6 +9,7 @@
     "build": "node scripts/build-blog-data.js && vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "build:client": "vite build",
     "atlas:data": "node scripts/build-atlas-data.js",
+    "year:data": "node scripts/build-year-data.js",
     "blog:listicles": "node scripts/generate-listicles.js",
     "blog:data": "node scripts/build-blog-data.js",
     "lint": "eslint .",

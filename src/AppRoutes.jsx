@@ -16,6 +16,7 @@ import './App.css'
 // from the server/prerender bundle's eager graph (these routes are never prerendered).
 const DailyGame = lazy(() => import('./components/DailyGame'))
 const FreePlayGame = lazy(() => import('./components/FreePlayGame'))
+const YearGame = lazy(() => import('./components/YearGame'))
 
 function GameFallback() {
   return (
@@ -56,6 +57,14 @@ export default function AppRoutes() {
         }
       />
       <Route path="/archive" element={<ArchiveIndex />} />
+      <Route
+        path="/year-mode"
+        element={
+          <Suspense fallback={<GameFallback />}>
+            <YearGame />
+          </Suspense>
+        }
+      />
       <Route path="/landing" element={<Landing />} />
       <Route
         path="/play"

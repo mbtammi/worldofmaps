@@ -58,6 +58,18 @@ export const ROUTE_META = {
       'population density map',
     ],
   },
+  '/year-mode': {
+    path: '/year-mode',
+    title: 'Guess the Year — Year Mode | World of Maps',
+    description:
+      'A daily geography puzzle with a twist: look at how the world map changes over time, then guess what year you\'re seeing. Internet usage went from 0% to 80%+ in 25 years — can you tell which year?',
+    keywords: [
+      'guess the year game',
+      'historical world map',
+      'geography time puzzle',
+      'year mode world of maps',
+    ],
+  },
   '/archive': {
     path: '/archive',
     title: 'Daily Map Archive | World of Maps',
@@ -99,4 +111,4 @@ export const ROUTE_META = {
 
 // Routes that are static enough to prerender to crawler-visible HTML at build time.
 // The game routes ('/', '/play') stay client-rendered (they need the browser + live data).
-export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/atlas', '/blog', '/archive']
+export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/atlas', '/blog', '/archive', '/year-mode']

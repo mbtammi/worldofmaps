@@ -77,6 +77,10 @@ function Landing() {
               <span className="internal-link-icon">📅</span>
               <span className="internal-link-text">Past Challenges</span>
             </a>
+            <a href="/year-mode" className="landing-internal-link">
+              <span className="internal-link-icon">🗓️</span>
+              <span className="internal-link-text">Year Mode</span>
+            </a>
             <a href="/how-to-play" className="landing-internal-link">
               <span className="internal-link-icon">❓</span>
               <span className="internal-link-text">How to Play</span>

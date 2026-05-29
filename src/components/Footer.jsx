@@ -59,6 +59,11 @@ function Footer() {
               aria-label="Past daily challenges archive"
             >Archive</a>
             <a
+              href="/year-mode"
+              className="footer-link"
+              aria-label="Year mode: guess what year the world map is from"
+            >Year Mode</a>
+            <a
               href="https://worldofthemaps.com/landing"
               className="footer-link"
               aria-label="Geography game home page"
