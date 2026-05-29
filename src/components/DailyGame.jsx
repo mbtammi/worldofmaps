@@ -5,6 +5,7 @@ import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '.
 import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate, getDatasetIdForDate, getDateStringForDaysAgo } from '../data/dailyChallenge'
 import { getLeaderboardData, getCalculatedStats } from '../data/gameStats'
 import StatsModal from './StatsModal'
+import OnboardingTutorial from './OnboardingTutorial'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
 import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllThemes } from '../data/themeManager'
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
@@ -62,6 +63,7 @@ function DailyGame() {
   const [streakMilestoneToast, setStreakMilestoneToast] = useState(null)
   const [currentStreak, setCurrentStreak] = useState(0)
   const [yesterdayInfo, setYesterdayInfo] = useState(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     async function checkNewFeatures() {
@@ -103,6 +105,24 @@ function DailyGame() {
       setCurrentStreak(calc.displayedStreak || 0)
     } catch (_) { /* ignore */ }
   }, [])
+
+  // First-visit detection. We surface the welcome tutorial when there's no game history AND
+  // the user hasn't seen the tutorial before. Skipped for past-day URLs (those visitors arrived
+  // via a specific link — they're not first-timers in the funnel sense, and the overlay would
+  // get in the way of the puzzle they came to play).
+  useEffect(() => {
+    if (isPastDay) return
+    try {
+      const seenStats = localStorage.getItem('worldofthemaps_stats')
+      const onboardingDone = localStorage.getItem('worldofthemaps_onboarding_done')
+      if (!seenStats && !onboardingDone) setShowOnboarding(true)
+    } catch (_) { /* ignore */ }
+  }, [isPastDay])
+
+  const completeOnboarding = () => {
+    try { localStorage.setItem('worldofthemaps_onboarding_done', '1') } catch (_) {}
+    setShowOnboarding(false)
+  }
 
   // Surface yesterday's dataset + global stats on the home page (today only, not in past-day mode).
   // Pulls from the same snapshot JSON the daily game uses + the daily-stats API we already call.
@@ -600,6 +620,8 @@ function DailyGame() {
   // Show loading if game state isn't ready
   if (loading || !gameState || !progressLoaded) {
     return (
+      <>
+      {showOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
       <div className="daily-game">
         <div className="loading">
           <div className="loading-globe">🌍</div>
@@ -621,6 +643,7 @@ function DailyGame() {
           )}
         </div>
       </div>
+      </>
     )
   }
 
@@ -964,6 +987,7 @@ function DailyGame() {
       </Suspense>
     )}
     </div>
+    {showOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
     <FeatureRequestsModal open={featureModalOpen} onClose={()=> setFeatureModalOpen(false)} />
     <StatsModal
       open={statsModalOpen}
