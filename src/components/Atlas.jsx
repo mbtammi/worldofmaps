@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
@@ -93,6 +93,18 @@ export default function Atlas() {
     )
   }
 
+  // Inline cross-links to 2 related atlas pages, picked from the same category. These are
+  // crawler-visible inside the intro prose (not just in the related-list at the bottom),
+  // which 2026 SEO guidance rates heavily — internal-link density inside body content is one
+  // of the strongest topical-authority signals. ×88 atlas pages × 2 = ~176 inline outbound links.
+  const inlineRelated = useMemo(() => {
+    const index = readAtlasGlobal('__ATLAS_INDEX__') || []
+    if (!data || !index.length) return []
+    return index
+      .filter((d) => d.category === data.category && d.id !== data.id)
+      .slice(0, 2)
+  }, [data])
+
   const title = `${data.title} by Country`
   const url = `${SITE_URL}/atlas/${data.id}`
   const seoDescription = `${data.description} World map and full country rankings for ${data.stats.count} countries (${data.year}). Highest: ${data.stats.max.name}; lowest: ${data.stats.min.name}.`
@@ -117,6 +129,18 @@ export default function Atlas() {
         <p className="atlas-intro">
           {data.description} Data covers {data.stats.count} countries for {data.year}, sourced
           from {data.source}.
+          {inlineRelated.length > 0 && (
+            <>
+              {' '}See also{' '}
+              {inlineRelated.map((r, i) => (
+                <span key={r.id}>
+                  {i > 0 ? ' and ' : ''}
+                  <Link to={`/atlas/${r.id}`}>{r.title}</Link>
+                </span>
+              ))}
+              .
+            </>
+          )}
         </p>
 
         <section className="atlas-stats" aria-label="Key statistics">
