@@ -3,6 +3,23 @@
 A working document. Built from the analysis in this thread + a code-grounded
 investigation. Items are sized so we can execute one at a time.
 
+## Progress (most-recent first)
+
+- **2026-05-30** — **Tier 3 #10 (`1b8a0c8`)**: dormant Bluesky auto-post infrastructure (`.github/workflows/daily-post.yml` + `scripts/post-daily-social.mjs`, no-dep, exits 0 until `BSKY_*` secrets are added).
+- **2026-05-30** — **Tier 3 #13 (`1900368`)**: `/for-teachers` page — single-page classroom outline + discussion prompts.
+- **2026-05-30** — **Tier 5 #17 (`796abfe`)**: real player count on Landing — replaces hardcoded `1001+` with today's live play count from `/api/dailyStats`.
+- **2026-05-30** — **Tier 4 #16 (`7b190b0`)**: inline "See also" cross-links on atlas pages — 170 new inline outbound links across 87/88 pages.
+- **2026-05-30** — **Tier 5 #18 (`eb8aaf6`)**: friend-challenge button + `/challenge/:date` route — invite URL carries the inviter's score, recipient sees "👋 You've been challenged · they solved in 2/10".
+- **2026-05-29** — **Tier 3 #9 (`90068c8`)**: OG SVG → PNG rasterization via `@resvg/resvg-js` at build time. Fixes Facebook/LinkedIn link previews.
+- **2026-05-28** — **Tier 2 #5 (`0d7bc7b`)**: Guess-the-Year mode at `/year-mode`. 25-year internet-users snapshot. Separate stats bucket.
+- **2026-05-28** — **Tier 2 #8 (`85eedb4`)**: hard mode (4 options, separate progress namespace, share grid switches to `N/4` + 🎯 tag).
+- **2026-05-28** — **Tier 2 #7 (`5f5c662`)**: 4-step welcome tutorial for first-time visitors; renders during the snapshot-fetch loading state.
+- **2026-05-28** — **Tier 2 #6 (`253c987`)**: "Yesterday's reveal" — small card on the home page right panel showing yesterday's dataset + avg guesses + a Play-it link to the past-day archive.
+- **2026-05-26** — **Tier 1 #4 (`b6e25a9`)**: 5 OWID datasets re-enabled (happiness, democracy, press freedom, corruption, alcohol) + snapshot-first runtime fetcher (`fetchDataset` now reads `/data/atlas/<id>.json` first, live API is fallback only).
+- **2026-05-26** — **Tier 1 #3 (`c610f80`)**: past challenges archive — `/archive` index + `/daily/:date` routes, 30 prerendered past-day pages.
+- **2026-05-26** — **Tier 1 #2 (`80755f6`)**: streaks + Wordle-style stats modal. Streak continuity gating (lapsed users don't see fake streaks). Free-play stops polluting daily stats.
+- **2026-05-26** — **Tier 1 #1 (`a969ed8`)**: share format revamp — dataset title removed, fixed 10-wide emoji grid, `N/10` score, optional "Beat the average" line.
+
 ## Where we are
 
 - 100 prerendered URLs (5 content pages + 83 atlas pages + `/atlas` + `/blog` + 10 listicles)
