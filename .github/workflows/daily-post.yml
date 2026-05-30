@@ -1,0 +1,35 @@
+name: Daily Bluesky post
+
+# Posts a daily teaser to Bluesky pointing at today's World of Maps puzzle.
+# Runs every day at 04:30 UTC (≈ 07:30 Helsinki standard / 07:30 summer time during DST gap).
+# Adjust the cron if you want a different posting time.
+#
+# To activate: add two secrets in Settings → Secrets and variables → Actions:
+#   BSKY_HANDLE         — your bsky handle (e.g. worldofthemaps.bsky.social)
+#   BSKY_APP_PASSWORD   — an app password from bsky.app/settings/app-passwords
+# Without the secrets the job exits 0 with a "skipping" message, so the workflow stays green.
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch: # also runnable manually from the Actions tab
+
+# Single concurrent run; cancel any already-running instance.
+concurrency:
+  group: daily-post
+  cancel-in-progress: true
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Post to Bluesky
+        env:
+          BSKY_HANDLE: ${{ secrets.BSKY_HANDLE }}
+          BSKY_APP_PASSWORD: ${{ secrets.BSKY_APP_PASSWORD }}
+        run: node scripts/post-daily-social.mjs
