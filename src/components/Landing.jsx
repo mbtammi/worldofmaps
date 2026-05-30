@@ -4,16 +4,28 @@ import Header from './Header'
 import Footer from './Footer'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
+import { getCurrentDayIndex } from '../data/dailyChallenge'
 import './Landing.css'
 
 function Landing() {
   const navigate = useNavigate();
-  const [playerCount, setPlayerCount] = useState('1001+')
+  // null = not loaded yet → render the fallback copy. Once Firestore-backed daily stats come
+  // back, switch to the honest count. We deliberately don't pre-seed a fake number here.
+  const [todayPlays, setTodayPlays] = useState(null)
 
-  // Placeholder: in future fetch from an API or analytics aggregate
   useEffect(() => {
-    // Example: fetch('/api/players-today').then(r=>r.json()).then(d=> setPlayerCount(d.count))
-    // For now keep static or derive from local heuristics
+    let cancelled = false
+    ;(async () => {
+      try {
+        const dayIndex = getCurrentDayIndex()
+        const r = await fetch(`/api/dailyStats?dayIndex=${dayIndex}`)
+        if (!r.ok) return
+        const data = await r.json()
+        if (cancelled) return
+        if (typeof data?.plays === 'number' && data.plays > 0) setTodayPlays(data.plays)
+      } catch (_) { /* silent — keeps the fallback copy */ }
+    })()
+    return () => { cancelled = true }
   }, [])
 
   return (
@@ -32,7 +44,13 @@ function Landing() {
               Play a free daily geography & world data guessing game. Like GeoGuessr meets Wordle: identify real global datasets (GDP, population density, life expectancy, energy use, internet access and more) from an interactive 3D map.
             </p>
             <div className="games-counter">
-              <span className="counter-text">Join <strong className="player-count-gradient">{playerCount}</strong> players worldwide!</span>
+              {todayPlays != null ? (
+                <span className="counter-text">
+                  <strong className="player-count-gradient">{todayPlays.toLocaleString('en-US')}</strong> already played today's map
+                </span>
+              ) : (
+                <span className="counter-text">A new map every day · no signup, no ads</span>
+              )}
             </div>
             <button 
               onClick={() => navigate('/')} 
