@@ -64,6 +64,11 @@ function Footer() {
               aria-label="Year mode: guess what year the world map is from"
             >Year Mode</a>
             <a
+              href="/for-teachers"
+              className="footer-link"
+              aria-label="World of Maps for teachers and classrooms"
+            >For Teachers</a>
+            <a
               href="https://worldofthemaps.com/landing"
               className="footer-link"
               aria-label="Geography game home page"

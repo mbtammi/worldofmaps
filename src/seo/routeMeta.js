@@ -96,6 +96,19 @@ export const ROUTE_META = {
       'geoguessr alternative',
     ],
   },
+  '/for-teachers': {
+    path: '/for-teachers',
+    title: 'World of Maps for Teachers — Free Daily Geography Warm-up',
+    description:
+      'A free 3-minute daily geography and data-literacy warm-up for your classroom. No accounts, no ads, no email collection. Real open data, ~85 datasets, includes a 10-minute lesson outline.',
+    keywords: [
+      'geography classroom resource',
+      'free geography game for schools',
+      'data literacy classroom',
+      'geography teacher warm-up',
+      'social studies daily map',
+    ],
+  },
   '/how-to-play': {
     path: '/how-to-play',
     title: 'How to Play | World of Maps Daily Geography Game',
@@ -111,4 +124,4 @@ export const ROUTE_META = {
 
 // Routes that are static enough to prerender to crawler-visible HTML at build time.
 // The game routes ('/', '/play') stay client-rendered (they need the browser + live data).
-export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/atlas', '/blog', '/archive', '/year-mode']
+export const PRERENDER_ROUTES = ['/landing', '/about', '/how-to-play', '/for-teachers', '/atlas', '/blog', '/archive', '/year-mode']

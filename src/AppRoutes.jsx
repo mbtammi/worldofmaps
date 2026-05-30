@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Landing from './components/Landing'
 import About from './components/About'
 import HowToPlay from './components/HowToPlay'
+import ForTeachers from './components/ForTeachers'
 import AtlasIndex from './components/AtlasIndex'
 import Atlas from './components/Atlas'
 import BlogIndex from './components/BlogIndex'
@@ -84,6 +85,7 @@ export default function AppRoutes() {
       />
       <Route path="/about" element={<About />} />
       <Route path="/how-to-play" element={<HowToPlay />} />
+      <Route path="/for-teachers" element={<ForTeachers />} />
       <Route path="/atlas" element={<AtlasIndex />} />
       <Route path="/atlas/:datasetId" element={<Atlas />} />
       <Route path="/blog" element={<BlogIndex />} />
