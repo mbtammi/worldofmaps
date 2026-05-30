@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useLocation, useSearchParams, Link } from 'react-router-dom'
+import { SITE_URL } from '../seo/routeMeta'
 import GlobeView from './GlobeView'
 import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate, getDatasetIdForDate, getDateStringForDaysAgo } from '../data/dailyChallenge'
@@ -29,10 +30,19 @@ function formatArchiveDateLong(yyyyMmDd) {
 }
 
 function DailyGame() {
-  // When this component is mounted at /daily/:date, useParams returns the date — flipping us
-  // into past-day archive mode. At the home route '/' there is no :date param.
+  // When this component is mounted at /daily/:date or /challenge/:date, useParams returns the date.
+  // /challenge/:date is an invite link — same date-pinned puzzle as /daily/:date, but framed as a
+  // social challenge with the inviter's score visible via ?score=N&mode=hard query params.
   const { date: pastDate } = useParams()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
   const isPastDay = Boolean(pastDate)
+  const isChallenge = isPastDay && location.pathname.startsWith('/challenge/')
+  const inviterScore = (() => {
+    const s = parseInt(searchParams.get('score') || '', 10)
+    return Number.isFinite(s) && s > 0 ? s : null
+  })()
+  const inviterHard = searchParams.get('mode') === 'hard'
   const [gameState, setGameState] = useState(null)
   const [showTooltips, setShowTooltips] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
@@ -510,6 +520,32 @@ function DailyGame() {
     setTimeout(()=> setShareStatus(null), 4000)
   }
 
+  // Build + share a /challenge/<today-date> URL so the recipient sees the inviter's score.
+  // Reuses the existing shareStatus pill for feedback. Spoiler-safe — never includes the title.
+  const handleChallengeFriend = async () => {
+    if (!gameState?.isComplete || isPastDay) return
+    const todayDate = getDateStringForDaysAgo(0)
+    const params = new URLSearchParams()
+    if (gameState.isWon) params.set('score', String(gameState.guesses.length))
+    if (hardMode) params.set('mode', 'hard')
+    const qs = params.toString()
+    const url = `${SITE_URL}/challenge/${todayDate}${qs ? '?' + qs : ''}`
+    const ratingSize = hardMode ? 4 : 10
+    const text = gameState.isWon
+      ? `I solved today's World of Maps in ${gameState.guesses.length}/${ratingSize}${hardMode ? ' 🎯 Hard' : ''} — can you beat me?\n\n${url}`
+      : `Today's World of Maps stumped me — can you crack it?\n\n${url}`
+    setShareStatus('preparing')
+    const shared = await tryWebShare({ text, title: 'World of Maps Challenge' })
+    if (shared) {
+      setShareStatus('shared-text')
+      setTimeout(() => setShareStatus(null), 3500)
+      return
+    }
+    const copied = await copyTextToClipboard(text)
+    setShareStatus(copied ? 'copied' : 'failed')
+    setTimeout(() => setShareStatus(null), 3500)
+  }
+
   // Drawer gesture handlers (mobile only)
   useEffect(()=>{
     if (!leftOptionsRef.current) return
@@ -734,8 +770,38 @@ function DailyGame() {
         worldofthemaps
       </div>
 
-      {/* Archive-mode banner — only when replaying a past day */}
-      {isPastDay && (
+      {/* Challenge-mode banner — when somebody sent you a /challenge/:date link */}
+      {isChallenge && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 56,
+            left: 16,
+            zIndex: 110,
+            background: 'rgba(11, 37, 69, 0.88)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(127, 209, 255, 0.55)',
+            padding: '6px 12px',
+            borderRadius: 999,
+            fontSize: '0.78em',
+            color: '#7fd1ff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            maxWidth: '90vw',
+          }}
+        >
+          👋 You've been challenged
+          {inviterScore != null && (
+            <span style={{ color: '#cbd5e0' }}>
+              · they solved in <strong style={{ color: '#fff' }}>{inviterScore}/{inviterHard ? 4 : 10}</strong>
+              {inviterHard ? ' 🎯' : ''}
+            </span>
+          )}
+        </div>
+      )}
+      {/* Archive-mode banner — only when replaying a past day (not from a challenge link) */}
+      {isPastDay && !isChallenge && (
         <div
           style={{
             position: 'fixed',
@@ -976,6 +1042,18 @@ function DailyGame() {
             </button>
             <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:10}}>
               <button className="option-btn" onClick={handleShare}>Quick Share (Image)</button>
+              {!isPastDay && (
+                <button
+                  className="option-btn"
+                  style={{
+                    background: 'rgba(127, 209, 255, 0.18)',
+                    borderColor: 'rgba(127, 209, 255, 0.45)',
+                  }}
+                  onClick={handleChallengeFriend}
+                >
+                  📨 Challenge a friend
+                </button>
+              )}
               <button className="option-btn" style={{background:'rgba(255,255,255,0.08)'}} onClick={()=> setShareSheetOpen(true)}>More Share Options</button>
             </div>
             {shareStatus && (

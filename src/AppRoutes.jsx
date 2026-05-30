@@ -56,6 +56,14 @@ export default function AppRoutes() {
           </Suspense>
         }
       />
+      <Route
+        path="/challenge/:date"
+        element={
+          <Suspense fallback={<GameFallback />}>
+            <DailyGame />
+          </Suspense>
+        }
+      />
       <Route path="/archive" element={<ArchiveIndex />} />
       <Route
         path="/year-mode"
