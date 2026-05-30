@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
 import SEO from './SEO'
@@ -45,6 +46,37 @@ function HowToPlay() {
             <li>Remember high-income economies often correlate with health, internet and education metrics.</li>
           </ul>
         </div>
+
+        <h2>Other ways to play</h2>
+        <ul>
+          <li>
+            <strong><Link to="/year-mode">Guess the Year mode</Link></strong> — the dataset is
+            named ("Internet Users"), the year is hidden. Slide to a year between 2000 and 2024
+            and see how close you got. Stats are tracked separately from the daily streak.
+          </li>
+          <li>
+            <strong><Link to="/archive">Past challenges archive</Link></strong> — replay any of
+            the last 30 days. Doesn't affect your daily streak, so it's safe to catch up.
+          </li>
+          <li>
+            <strong>Hard mode</strong> — open the ⋯ menu on the daily game and toggle it on.
+            You'll see 4 options instead of 10 (3 wrong + 1 correct). The page reloads to apply
+            the new option count, and shares switch to <code>N/4</code> with a 🎯 tag.
+          </li>
+          <li>
+            <strong>Challenge a friend</strong> — after you solve today's puzzle, the win screen
+            has a "📨 Challenge a friend" button. Sends a link that lands them on the same
+            puzzle with your score visible: "they solved in 2/10 — can you?"
+          </li>
+        </ul>
+
+        <h2>Explore the data behind the maps</h2>
+        <p>
+          When you're done playing, the <Link to="/atlas">Data Atlas</Link> has one page per
+          dataset with the full ranked country table, key stats, and the data source. The{' '}
+          <Link to="/blog">blog</Link> has short rankings posts ("the 10 countries with the
+          highest internet usage" etc.) built from the same numbers.
+        </p>
       </main>
       
       <Footer />
