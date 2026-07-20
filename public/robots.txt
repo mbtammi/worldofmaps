@@ -1,8 +1,55 @@
+# World of Maps — https://worldofthemaps.com
+# Default: everything crawlable except the API.
+
 User-agent: *
 Allow: /
-
-# Disallow admin or API routes if any
 Disallow: /api/
 
-# Sitemap
+# --- AI assistant retrieval crawlers ---
+# These fetch pages to answer user questions and cite sources. Explicitly allowed:
+# being quoted in ChatGPT / Claude / Perplexity / Google AI answers is the goal.
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# --- Bulk training-corpus scrapers ---
+# Allowed too: broad model training is how a small site becomes a known answer.
+# Flip any of these to `Disallow: /` if that tradeoff changes.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
 Sitemap: https://worldofthemaps.com/sitemap.xml

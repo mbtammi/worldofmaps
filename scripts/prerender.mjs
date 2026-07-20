@@ -231,4 +231,67 @@ const xml =
   '\n</urlset>\n'
 writeFileSync(join(distDir, 'sitemap.xml'), xml)
 console.log(`✓ sitemap.xml (${urls.length} urls)`)
+
+// 6) llms.txt — a plain-text map of the site for AI assistants, per the llmstxt.org
+// convention. Sitemaps give crawlers URLs; this gives models the context to answer
+// "what is this site" and to pick the right page to cite. Generated from the same
+// snapshots as the pages themselves so it can't drift.
+const atlasByCategory = new Map()
+for (const entry of atlasIndex) {
+  if (!atlasByCategory.has(entry.category)) atlasByCategory.set(entry.category, [])
+  atlasByCategory.get(entry.category).push(entry)
+}
+
+const llmsLines = [
+  '# World of Maps',
+  '',
+  '> A free daily world map game. Each day a real global dataset (GDP per capita,',
+  '> population density, life expectancy, forest cover, internet use and ~85 more) is',
+  '> shaded onto an interactive 3D globe with the legend hidden, and the player guesses',
+  '> which dataset it is from 10 options. Think GeoGuessr meets Wordle, for world data.',
+  '',
+  'All content is free, requires no account, and is published in English.',
+  'Every dataset comes from a named public source (World Bank, UN, WHO, FAO and',
+  'similar) with the source and year stated on the page.',
+  '',
+  '## Play',
+  '',
+  `- [Today's daily map](${SITE_URL}/): the main game — one new map every day, shared globally.`,
+  `- [How to play](${SITE_URL}/how-to-play): rules, scoring, and how to read a choropleth map.`,
+  `- [Free play](${SITE_URL}/play): unlimited practice rounds, no daily limit.`,
+  `- [Year mode](${SITE_URL}/year-mode): guess the year a dataset snapshot is from.`,
+  `- [Archive](${SITE_URL}/archive): replay the last 30 daily maps.`,
+  '',
+  '## Atlas — data pages',
+  '',
+  `Each atlas page renders one dataset as a world map plus a full country-by-country`,
+  `ranking table, with the source, year and country count stated. ${atlasIndex.length} datasets:`,
+  '',
+]
+
+for (const [category, entries] of atlasByCategory) {
+  llmsLines.push(`### ${category}`, '')
+  for (const e of entries) {
+    llmsLines.push(`- [${e.title}](${SITE_URL}/atlas/${e.id}): ${e.title} by country, ${e.count} countries, ${e.year}.`)
+  }
+  llmsLines.push('')
+}
+
+llmsLines.push('## Articles', '')
+for (const p of blogIndex) {
+  llmsLines.push(`- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`)
+}
+
+llmsLines.push(
+  '',
+  '## About',
+  '',
+  `- [About](${SITE_URL}/about): what the project is, and where the data comes from.`,
+  `- [For teachers](${SITE_URL}/for-teachers): classroom use, lesson ideas, curriculum fit.`,
+  '',
+)
+
+writeFileSync(join(distDir, 'llms.txt'), llmsLines.join('\n'))
+console.log(`✓ llms.txt (${atlasIndex.length} datasets, ${blogIndex.length} articles)`)
+
 console.log(`Prerender complete: ${generated.length} routes.`)

@@ -9,12 +9,13 @@ export const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`
 export const ROUTE_META = {
   '/': {
     path: '/',
-    title: 'World of Maps | Daily Geography & Data Guessing Game',
+    title: 'World Map Game | Daily Geography & Data Guessing Puzzle',
     description:
-      "Play today's free geography puzzle: identify the real global dataset shaded on a 3D globe. A new mystery map every day.",
+      "Play today's free world map game: identify the real global dataset shaded on a 3D globe. A new daily geography puzzle every day.",
     keywords: [
+      'world map game',
+      'map game',
       'daily geography game',
-      'geography quiz',
       'map guessing game',
       'world data game',
       'geoguessr alternative',
@@ -22,15 +23,16 @@ export const ROUTE_META = {
   },
   '/landing': {
     path: '/landing',
-    title: 'World of Maps | Daily Geography & Data Guessing Game',
+    title: 'World Map Game | Daily Geography & Data Guessing Puzzle',
     description:
-      'Play a free daily geography & world data guessing game. Identify real global datasets on an interactive 3D globe — like GeoGuessr meets Wordle.',
+      'Play a free daily world map game. Guess real global datasets on an interactive 3D globe — like GeoGuessr meets Wordle for geography and world data.',
     keywords: [
+      'world map game',
+      'map game',
+      'map games',
       'geography game',
       'daily geography game',
-      'map guessing game',
       'geoguessr alternative',
-      'world data quiz',
     ],
   },
   '/play': {

@@ -78,8 +78,48 @@ function HowToPlay() {
           highest internet usage" etc.) built from the same numbers.
         </p>
       </main>
-      
+
       <Footer />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'HowTo',
+            name: 'How to play World of Maps',
+            description:
+              'Identify which real global dataset is shaded onto a 3D globe, in as few guesses as possible.',
+            totalTime: 'PT2M',
+            step: [
+              {
+                '@type': 'HowToStep',
+                position: 1,
+                name: 'Analyze the globe visualization',
+                text: 'Each country is shaded based on a real dataset (e.g. population density, life expectancy, GDP, renewable energy). Identify spatial clusters, outliers and continental contrasts.',
+              },
+              {
+                '@type': 'HowToStep',
+                position: 2,
+                name: 'Make a data-driven guess',
+                text: 'Select what you think the dataset represents: demographics, economy, environment, health, infrastructure, technology or education indicators.',
+              },
+              {
+                '@type': 'HowToStep',
+                position: 3,
+                name: 'Narrow it down',
+                text: "If your first guess is wrong, the remaining options stay on screen so you can refine your thinking. The fewer tries you need, the better your score.",
+              },
+              {
+                '@type': 'HowToStep',
+                position: 4,
+                name: 'Share and compare',
+                text: 'Post your spoiler-safe grid to friends or study groups to compare guess counts without revealing the answer.',
+              },
+            ],
+          }),
+        }}
+      />
     </div>
   )
 }

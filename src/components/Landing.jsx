@@ -39,7 +39,7 @@ function Landing() {
         <section className="landing-hero">
           <div className="landing-hero-content">
             <img src="/favicon.svg" width="48" height="48" alt="World of Maps globe logo" className="landing-logo" />
-            <h1>Daily Geography Game on a 3D Globe</h1>
+            <h1>World Map Game — Daily Geography Puzzle on a 3D Globe</h1>
             <p className="landing-hero-subtitle">
               Play a free daily geography & world data guessing game. Like GeoGuessr meets Wordle: identify real global datasets (GDP, population density, life expectancy, energy use, internet access and more) from an interactive 3D map.
             </p>
