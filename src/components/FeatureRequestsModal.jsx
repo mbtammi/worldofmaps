@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import { useEffect, useState } from 'react'
 import './FeatureRequestsModal.css'
 import { 
@@ -142,7 +143,7 @@ export default function FeatureRequestsModal({ open, onClose }) {
       <div className="fr-container">
         <div className="fr-header">
           <h2 id="fr-modal-title">Feature Requests & Roadmap</h2>
-          <button className="fr-close" onClick={onClose} aria-label="Close feature requests">✕</button>
+          <button className="fr-close" onClick={onClose} aria-label="Close feature requests"><Icon name="close" /></button>
         </div>
         <form className="fr-form" onSubmit={handleSubmit}>
           <div className="fr-fields">
@@ -186,7 +187,7 @@ export default function FeatureRequestsModal({ open, onClose }) {
                 </div>
               </div>
               <div className="fr-item-actions">
-                <button onClick={()=>handleUpvote(f.id)} className="fr-upvote" aria-label={`Upvote feature ${f.title}`}>⬆</button>
+                <button onClick={()=>handleUpvote(f.id)} className="fr-upvote" aria-label={`Upvote feature ${f.title}`}><Icon name="arrowUp" /></button>
                 <div className="fr-vote-count">
                   {f.votes + (optimisticVotes[f.id] || 0)} vote{f.votes===1?'':'s'}
                 </div>

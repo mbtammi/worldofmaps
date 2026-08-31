@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Header from './Header'
 import Footer from './Footer'
+import Icon from './Icon'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import { getCurrentDayIndex } from '../data/dailyChallenge'
@@ -76,35 +77,35 @@ function Landing() {
         <nav className="landing-internal-nav" aria-label="Site sections">
           <div className="landing-internal-container">
             <a href="/" className="landing-internal-link">
-              <span className="internal-link-icon">🎯</span>
+              <Icon name="target" className="internal-link-icon" />
               <span className="internal-link-text">Play Daily Game</span>
             </a>
             <a href="/play" className="landing-internal-link">
-              <span className="internal-link-icon">🎮</span>
+              <Icon name="dice" className="internal-link-icon" />
               <span className="internal-link-text">Free Play Mode</span>
             </a>
             <a href="/atlas" className="landing-internal-link">
-              <span className="internal-link-icon">🗺️</span>
+              <Icon name="map" className="internal-link-icon" />
               <span className="internal-link-text">World Data Atlas</span>
             </a>
             <a href="/blog" className="landing-internal-link">
-              <span className="internal-link-icon">📝</span>
+              <Icon name="document" className="internal-link-icon" />
               <span className="internal-link-text">Blog</span>
             </a>
             <a href="/archive" className="landing-internal-link">
-              <span className="internal-link-icon">📅</span>
+              <Icon name="calendar" className="internal-link-icon" />
               <span className="internal-link-text">Past Challenges</span>
             </a>
             <a href="/year-mode" className="landing-internal-link">
-              <span className="internal-link-icon">🗓️</span>
+              <Icon name="clock" className="internal-link-icon" />
               <span className="internal-link-text">Year Mode</span>
             </a>
             <a href="/how-to-play" className="landing-internal-link">
-              <span className="internal-link-icon">❓</span>
+              <Icon name="question" className="internal-link-icon" />
               <span className="internal-link-text">How to Play</span>
             </a>
             <a href="/about" className="landing-internal-link">
-              <span className="internal-link-icon">ℹ️</span>
+              <Icon name="info" className="internal-link-icon" />
               <span className="internal-link-text">About</span>
             </a>
           </div>
@@ -119,37 +120,37 @@ function Landing() {
           
           <div className="landing-features-grid">
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">🌍</span>
+              <Icon name="globe" className="landing-feature-icon" />
               <h3>Interactive 3D Globe Visualization</h3>
               <p>Explore authentic world datasets on a smooth, rotating globe. Visual patterns teach economic, demographic, health and environmental trends.</p>
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">🎯</span>
+              <Icon name="target" className="landing-feature-icon" />
               <h3>Daily Geography Challenge</h3>
               <p>Fresh mystery dataset every day: population density, GDP per capita, forest coverage, renewable energy, literacy rate, healthcare spending and more.</p>
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">📤</span>
+              <Icon name="share" className="landing-feature-icon" />
               <h3>Spoiler-Safe Sharing</h3>
               <p>Share an emoji grid of your result without revealing the answer — perfect for daily bragging rights that don't ruin the puzzle for friends.</p>
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">📊</span>
+              <Icon name="chart" className="landing-feature-icon" />
               <h3>Track Performance & Streaks</h3>
               <p>Monitor win rate, guess efficiency and solving streaks. See your mastery of world statistics improve.</p>
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">🎨</span>
+              <Icon name="palette" className="landing-feature-icon" />
               <h3>Accessible Visual Themes</h3>
               <p>Light, dark and color-rich modes designed for clarity and immersion on desktop & mobile.</p>
             </div>
             
             <div className="landing-feature-card">
-              <span className="landing-feature-icon">⚡</span>
+              <Icon name="bolt" className="landing-feature-icon" />
               <h3>Fast, Brain-Friendly Sessions</h3>
               <p>Each puzzle takes 2–5 minutes—perfect for daily learning, classrooms or competitive sharing.</p>
             </div>

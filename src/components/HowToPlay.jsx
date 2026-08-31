@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import Icon from './Icon'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import './Layout.css'
@@ -17,22 +18,22 @@ function HowToPlay() {
         
         <div className="instructions">
           <div className="step">
-            <h2>1. 🌎 Analyze the Globe Visualization</h2>
+            <h2><Icon name="globe" /> 1. Analyze the Globe Visualization</h2>
             <p>Each country is shaded based on a real dataset (e.g. population density, life expectancy, GDP, renewable energy). Identify spatial clusters, outliers and continental contrasts.</p>
           </div>
           
           <div className="step">
-            <h2>2. 🤔 Make a Data-Driven Guess</h2>
+            <h2><Icon name="question" /> 2. Make a Data-Driven Guess</h2>
             <p>Enter or select what you think the dataset represents: demographics, economy, environment, health, infrastructure, technology or education indicators.</p>
           </div>
           
           <div className="step">
-            <h2>3. 🎯 Narrow It Down</h2>
-            <p>If your first guess is wrong, the remaining options stay on screen so you can refine your thinking. The fewer tries you need, the better your score — and you carry that intuition into the next day's map.</p>
+            <h2><Icon name="target" /> 3. Narrow It Down</h2>
+            <p>You get <strong>5 guesses</strong>. A wrong one is struck off the list, so each miss narrows the field — but run out and the map is lost for the day. The fewer tries you need, the better your score, and you carry that intuition into the next day's map.</p>
           </div>
           
           <div className="step">
-            <h2>4. 🎉 Share & Compare</h2>
+            <h2><Icon name="share" /> 4. Share &amp; Compare</h2>
             <p>Post your spoiler-safe grid to friends or study groups. Encourage competition while spreading world data literacy.</p>
           </div>
         </div>
@@ -60,13 +61,14 @@ function HowToPlay() {
           </li>
           <li>
             <strong>Hard mode</strong> — open the ⋯ menu on the daily game and toggle it on.
-            You'll see 4 options instead of 10 (3 wrong + 1 correct). The page reloads to apply
-            the new option count, and shares switch to <code>N/4</code> with a 🎯 tag.
+            You'll see 4 options instead of 10 (3 wrong + 1 correct) and get 2 guesses instead
+            of 5. The page reloads to apply the new option count, and shares switch to
+            <code>N/2</code> with a hard-mode tag.
           </li>
           <li>
             <strong>Challenge a friend</strong> — after you solve today's puzzle, the win screen
-            has a "📨 Challenge a friend" button. Sends a link that lands them on the same
-            puzzle with your score visible: "they solved in 2/10 — can you?"
+            has a "Challenge a friend" button. Sends a link that lands them on the same
+            puzzle with your score visible: "they solved in 2/5 — can you?"
           </li>
         </ul>
 
@@ -108,7 +110,7 @@ function HowToPlay() {
                 '@type': 'HowToStep',
                 position: 3,
                 name: 'Narrow it down',
-                text: "If your first guess is wrong, the remaining options stay on screen so you can refine your thinking. The fewer tries you need, the better your score.",
+                text: 'You get 5 guesses. Each wrong answer is struck off the list, narrowing the field — but run out and the map is lost for the day.',
               },
               {
                 '@type': 'HowToStep',

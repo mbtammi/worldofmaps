@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams, useLocation, useSearchParams, Link } from 'react-router-dom'
 import { SITE_URL } from '../seo/routeMeta'
 import GlobeView from './GlobeView'
-import { getTodaysDataset, createGameState, processGuess, finalizeGame } from '../data/gameManager'
-import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate, getDatasetIdForDate, getDateStringForDaysAgo } from '../data/dailyChallenge'
+import { getTodaysDataset, createGameState, processGuess, finalizeGame, guessBudgetFor } from '../data/gameManager'
+import { hasPlayedToday, markTodayAsPlayed, getDatasetByDate, getDatasetIdForDate, getDateStringForDaysAgo, getTimeUntilReset } from '../data/dailyChallenge'
 import { getLeaderboardData, getCalculatedStats } from '../data/gameStats'
 import StatsModal from './StatsModal'
 import { submitGlobalResult, fetchDailyGlobalStats } from '../data/globalStatsClient'
@@ -11,12 +11,18 @@ import { initializeTheme, getNextTheme, applyTheme, getCurrentTheme, getAllTheme
 import { generateShareText, copyTextToClipboard, tryWebShare, captureGlobeImage, createPolaroidImage, createStoryShareImage } from '../data/shareUtils'
 import FeatureRequestsModal from './FeatureRequestsModal'
 import { hasNewFeaturesRemote } from '../data/featureRequestsRemote'
+import Icon from './Icon'
+import { haptic } from '../data/haptics'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import './DailyGame.css'
 
 // Lazy load ShareSheet to improve initial page load performance
 const ShareSheet = lazy(() => import('./ShareSheet'))
+
+// Below this many recorded plays the count reads as "nobody is here" rather than social
+// proof, so it stays hidden.
+const MIN_PLAYS_TO_SHOW = 20
 
 // Helper used by the archive banner: "2026-05-27" → "May 27, 2026".
 const ARCHIVE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -53,7 +59,12 @@ function DailyGame() {
   const leftOptionsRef = useRef(null)
   const [alreadyPlayedModal, setAlreadyPlayedModal] = useState(false)
   const [progressLoaded, setProgressLoaded] = useState(false)
+  // True only when today's saved progress was already finished when the page loaded.
+  const [resumedComplete, setResumedComplete] = useState(false)
   const [globalAvg, setGlobalAvg] = useState(null)
+  // Global play count for today, shown as social proof. Suppressed below a threshold so a
+  // freshly-rolled day doesn't advertise "4 players".
+  const [playsToday, setPlaysToday] = useState(null)
   const [drawerCollapsed, setDrawerCollapsed] = useState(false)
   const drawerTouch = useRef({ startY: 0, lastY: 0, dragging: false })
   const [showHandlePulse, setShowHandlePulse] = useState(true)
@@ -72,6 +83,7 @@ function DailyGame() {
   const [streakMilestoneToast, setStreakMilestoneToast] = useState(null)
   const [currentStreak, setCurrentStreak] = useState(0)
   const [yesterdayInfo, setYesterdayInfo] = useState(null)
+  const [resetCountdown, setResetCountdown] = useState('')
   // Hard mode (lazy init from localStorage so it's available on first render).
   // Toggling reloads the page so the new option count takes effect cleanly.
   const [hardMode] = useState(() => {
@@ -151,6 +163,21 @@ function DailyGame() {
     })()
     return () => { cancelled = true }
   }, [isPastDay])
+
+  // Tick the countdown to the next daily reset. Only runs once the game is finished, which
+  // is the only place it's rendered.
+  useEffect(() => {
+    if (!gameState?.isComplete) return
+    const tick = () => {
+      const { totalMs } = getTimeUntilReset()
+      const s = Math.max(0, Math.floor(totalMs / 1000))
+      const pad = (n) => String(n).padStart(2, '0')
+      setResetCountdown(`${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [gameState?.isComplete])
 
   // Remove handle pulse after a few seconds
   useEffect(()=>{
@@ -237,6 +264,7 @@ function DailyGame() {
               if (restored.isComplete && !isPastDay) {
                 // Mark as played (in case) and show modal optionally
                 markTodayAsPlayed()
+                setResumedComplete(true)
               }
             } else {
               setGameState(initialGameState)
@@ -315,6 +343,7 @@ function DailyGame() {
                   try { localStorage.setItem(cacheKey, rounded.toString()) } catch(_){/* ignore */}
                 }
               }
+              if (data && typeof data.plays === 'number') setPlaysToday(data.plays)
             })
           }
         } catch(e) { /* ignore */ }
@@ -341,6 +370,7 @@ function DailyGame() {
       
       // Show missed guess toast if guess was wrong
       if (!newGameState.isWon && newGameState.guesses.length > gameState.guesses.length) {
+        haptic('wrong')
         setMissedGuessToast(true)
         setTimeout(() => setMissedGuessToast(false), 2500)
       }
@@ -378,6 +408,7 @@ function DailyGame() {
           setCurrentStreak(calc.displayedStreak || 0)
           if (newGameState.isWon && [3, 7, 14, 30, 50, 100].includes(calc.displayedStreak)) {
             setTimeout(() => {
+              haptic('milestone')
               setStreakMilestoneToast(calc.displayedStreak)
               setTimeout(() => setStreakMilestoneToast(null), 3500)
             }, 1600)
@@ -393,6 +424,7 @@ function DailyGame() {
           }
         } catch(_){}
         if (newGameState.isWon) {
+          haptic('win')
           setShowWinToast(true)
           setTimeout(()=> setShowWinToast(false), 3000)
         }
@@ -408,6 +440,7 @@ function DailyGame() {
                   try { localStorage.setItem(`worldofmaps_global_avg_${dayIndex}`, rounded.toString()) } catch(_){}
                 }
               }
+              if (data && typeof data.plays === 'number') setPlaysToday(data.plays)
             })
           }, 800)
         }
@@ -510,7 +543,7 @@ function DailyGame() {
     if (hardMode) params.set('mode', 'hard')
     const qs = params.toString()
     const url = `${SITE_URL}/challenge/${todayDate}${qs ? '?' + qs : ''}`
-    const ratingSize = hardMode ? 4 : 10
+    const ratingSize = guessBudgetFor(hardMode ? 4 : 10)
     const text = gameState.isWon
       ? `I solved today's World of Maps in ${gameState.guesses.length}/${ratingSize}${hardMode ? ' 🎯 Hard' : ''} — can you beat me?\n\n${url}`
       : `Today's World of Maps stumped me — can you crack it?\n\n${url}`
@@ -585,10 +618,10 @@ function DailyGame() {
   // On load after game state ready, if already played and game is complete show modal
   // (only applies to today's daily — past-day plays can be re-finished any time).
   useEffect(() => {
-    if (!isPastDay && gameState && gameState.isComplete && hasPlayedToday()) {
+    if (!isPastDay && resumedComplete && hasPlayedToday()) {
       setAlreadyPlayedModal(true)
     }
-  }, [gameState, isPastDay])
+  }, [resumedComplete, isPastDay])
 
   // Check for overflow and add class for scroll indicator
   useEffect(() => {
@@ -643,12 +676,16 @@ function DailyGame() {
     }
   }, [])
 
+  const guessesLeft = gameState?.maxGuesses
+    ? Math.max(0, gameState.maxGuesses - gameState.guesses.length)
+    : null
+
   // Show error if game failed to load
   if (loadError) {
     return (
       <div className="daily-game">
         <div className="loading">
-          <div className="loading-globe">❌</div>
+          <div className="loading-globe"><Icon name="alert" /></div>
           <div>Unable to load today's challenge</div>
           <div className="loading-subtitle">{loadError}</div>
           <button 
@@ -669,7 +706,7 @@ function DailyGame() {
       <>
       <div className="daily-game">
         <div className="loading">
-          <div className="loading-globe">🌍</div>
+          <div className="loading-globe"><Icon name="globe" /></div>
           {isPastDay ? (
             <>
               <div>Daily Map · {formatArchiveDateLong(pastDate)}</div>
@@ -683,7 +720,7 @@ function DailyGame() {
           )}
           {loadingSlowWarning && (
             <div className="loading-slow-warning">
-              ⏱️ Taking longer than expected... Please hold on.
+              <Icon name="clock" /> Taking longer than expected… Please hold on.
             </div>
           )}
         </div>
@@ -699,8 +736,9 @@ function DailyGame() {
       {/* Minimal mobile toast for win */}
       {showWinToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8}}>
-          {/* <span>✅ Correct</span> */}
-          <span style={{opacity:0.75}}>✅ {gameState?.dataset?.title}</span>
+          <span style={{opacity:0.75,display:'flex',alignItems:'center',gap:6}}>
+            <Icon name="check" /> {gameState?.dataset?.title}
+          </span>
         </div>
       )}
       {/* Streak milestone toast */}
@@ -719,20 +757,21 @@ function DailyGame() {
           zIndex: 165,
           boxShadow: '0 6px 20px rgba(255, 160, 60, 0.5)',
         }}>
-          🔥 {streakMilestoneToast}-day streak!
+          <Icon name="flame" /> {streakMilestoneToast}-day streak!
         </div>
       )}
       {/* Missed guess toast */}
       {missedGuessToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>
-          {/* <span>❌ Incorrect</span> */}
-          <span style={{opacity:0.85}}>❌ Try again!</span>
+          <span style={{opacity:0.85,display:'flex',alignItems:'center',gap:6}}>
+            <Icon name="close" /> Try again!
+          </span>
         </div>
       )}
       {alreadyPlayedModal && (
         <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,background:'rgba(0,0,0,0.6)'}}>
           <div style={{background:'var(--glassBackground)',backdropFilter:'blur(12px)',border:'1px solid var(--glassBorder)',padding:'30px 35px',borderRadius:16,maxWidth:320,textAlign:'center'}}>
-            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>You WON!</h2>
+            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>{gameState.isWon ? 'You WON!' : 'Better luck tomorrow'}</h2>
             <p style={{fontSize:'0.9em',lineHeight:1.4,margin:'0 0 18px'}}>You already finished today’s map. Come back tomorrow or play other maps.</p>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <button className="play-again-btn" onClick={() => { window.location.href='/play' }}>Play More Maps</button>
@@ -770,11 +809,11 @@ function DailyGame() {
             maxWidth: '90vw',
           }}
         >
-          👋 You've been challenged
+          <Icon name="send" /> You've been challenged
           {inviterScore != null && (
             <span style={{ color: '#cbd5e0' }}>
-              · they solved in <strong style={{ color: '#fff' }}>{inviterScore}/{inviterHard ? 4 : 10}</strong>
-              {inviterHard ? ' 🎯' : ''}
+              · they solved in <strong style={{ color: '#fff' }}>{inviterScore}/{guessBudgetFor(inviterHard ? 4 : 10)}</strong>
+              {inviterHard ? <Icon name="target" /> : null}
             </span>
           )}
         </div>
@@ -799,7 +838,7 @@ function DailyGame() {
             gap: 8,
           }}
         >
-          📅 Archive · {formatArchiveDateLong(pastDate)}
+          <Icon name="calendar" /> Archive · {formatArchiveDateLong(pastDate)}
           <Link
             to="/archive"
             style={{ color: '#cbd5e0', textDecoration: 'underline', fontSize: '0.85em' }}
@@ -817,10 +856,10 @@ function DailyGame() {
       {/* Top Right - Controls */}
       <div className="top-right-controls">
         <button className="control-btn" style={{fontSize: '1.2em', padding: '0'}} onClick={() => window.location.href = '/landing'}>
-          ⌂
+          <Icon name="home" />
         </button>
         <button className="control-btn" onClick={handleThemeSwitch}>
-          {getAllThemes().find(t => t.id === currentTheme)?.icon || '🌙'}
+          <Icon name={getAllThemes().find(t => t.id === currentTheme)?.icon || 'moon'} />
         </button>
         <button
           className="control-btn"
@@ -828,7 +867,7 @@ function DailyGame() {
           aria-label="Stats"
           title="Stats"
         >
-          📊
+          <Icon name="chart" />
         </button>
         <div className="menu-container">
           <button className="control-btn" onClick={() => { setShowMenu(!showMenu); }} style={{position:'relative'}}>
@@ -856,27 +895,20 @@ function DailyGame() {
                   setShowMenu(false)
                 }}
               >
-                {showTooltips ? '� Hide Countries' : '� Show Countries'}
+                <Icon name="map" /> {showTooltips ? 'Hide Countries' : 'Show Countries'}
               </button>
-              {/* Hints feature removed */}
-              {/* <button 
-                className="menu-item" 
-                onClick={handleThemeSwitch}
-              >
-                🎨 Theme: {getAllThemes().find(t => t.id === currentTheme)?.name || 'Dark'}
-              </button> */}
               <button
                 className="menu-item"
                 onClick={toggleHardMode}
                 title="Hard mode shows only 4 options (3 wrong + 1 correct)"
               >
-                🎯 Hard mode: {hardMode ? 'On' : 'Off'}
+                <Icon name="target" /> Hard mode: {hardMode ? 'On' : 'Off'}
               </button>
               <button
                 className="menu-item"
                 onClick={() => { setFeatureModalOpen(true); setFeatureHasNew(false); setShowMenu(false); }}
               >
-                ❗ Feature Requests
+                <Icon name="bell" /> Feature Requests
               </button>
             </div>
           )}
@@ -897,7 +929,7 @@ function DailyGame() {
             onClick={() => setStatsModalOpen(true)}
             title="View stats"
           >
-            <span>🔥 Streak</span>
+            <span><Icon name="flame" /> Streak</span>
             <span>{currentStreak}</span>
           </div>
         )}
@@ -911,6 +943,12 @@ function DailyGame() {
           <span>Global Avg</span>
           <span>{globalAvg !== null ? globalAvg.toFixed(1) : '—'}</span>
         </div>
+        {playsToday >= MIN_PLAYS_TO_SHOW && (
+          <div className="stat-item">
+            <span>Played today</span>
+            <span>{playsToday.toLocaleString()}</span>
+          </div>
+        )}
         <div className="legend-gradient"></div>
         <div className="legend-labels">
           <span>Min</span>
@@ -984,6 +1022,16 @@ function DailyGame() {
               }}>
                 Select the data this map represents:
               </div>
+              {gameState.maxGuesses && (
+                <div className="guess-pips" aria-label={`${guessesLeft} of ${gameState.maxGuesses} guesses left`}>
+                  {Array.from({ length: gameState.maxGuesses }, (_, i) => (
+                    <span
+                      key={i}
+                      className={`guess-pip ${i < gameState.guesses.length ? 'guess-pip-used' : ''}`}
+                    />
+                  ))}
+                </div>
+              )}
               <div className="options-grid">
                 {gameState.availableOptions.map((option, index) => (
                   <button
@@ -1003,22 +1051,23 @@ function DailyGame() {
           <div className="game-results">
             {gameState.isWon ? (
               <div className="win-message">
-                <h2>🎉 Correct!</h2>
+                <h2><Icon name="check" /> Correct!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p className="fun-fact">{gameState.dataset.funFact}</p>
                 {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
               </div>
             ) : (
               <div className="lose-message">
-                <h2>😔 Game Over!</h2>
+                <h2><Icon name="close" /> Game Over!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p>{gameState.dataset.description}</p>
                 {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
               </div>
             )}
-            <button className="play-again-btn" onClick={() => window.location.reload()}>
-              Play Again Tomorrow
-            </button>
+            <div className="next-puzzle">
+              <span className="next-puzzle-label">Next map in</span>
+              <span className="next-puzzle-clock">{resetCountdown}</span>
+            </div>
             <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:10}}>
               <button className="option-btn" onClick={handleShare}>Quick Share (Image)</button>
               {!isPastDay && (
@@ -1030,29 +1079,30 @@ function DailyGame() {
                   }}
                   onClick={handleChallengeFriend}
                 >
-                  📨 Challenge a friend
+                  <Icon name="send" /> Challenge a friend
                 </button>
               )}
               <button className="option-btn" style={{background:'rgba(255,255,255,0.08)'}} onClick={()=> setShareSheetOpen(true)}>More Share Options</button>
             </div>
             {shareStatus && (
               <div style={{marginTop:8,fontSize:'0.7em',opacity:0.8}}>
-                {shareStatus === 'preparing' && 'Generating image...'}
-                {shareStatus === 'shared-image' && 'Shared image ✅'}
-                {shareStatus === 'shared-text' && 'Shared text ✅'}
-                {shareStatus === 'copied' && 'Copied text ✅'}
-                {shareStatus === 'copied+image' && 'Copied text + opened image ✅'}
-                {shareStatus === 'failed' && 'Share failed ❌'}
+                {shareStatus === 'preparing' && 'Generating image…'}
+                {shareStatus === 'shared-image' && <><Icon name="check" /> Shared image</>}
+                {shareStatus === 'shared-text' && <><Icon name="check" /> Shared text</>}
+                {shareStatus === 'copied' && <><Icon name="check" /> Copied text</>}
+                {shareStatus === 'copied+image' && <><Icon name="check" /> Copied text + opened image</>}
+                {shareStatus === 'failed' && <><Icon name="close" /> Share failed</>}
               </div>
             )}
           </div>
         )}
         
         {/* Previous guesses */}
-        {gameState.guesses.length > 0 && !drawerCollapsed && (
+        {gameState.guesses.length > 0 && !drawerCollapsed && !gameState.isComplete && gameState.maxGuesses && (
           <div className="guesses-summary">
-            <p>Guesses: {gameState.guesses.length}</p>
-            {/* Hint suggestion removed */}
+            <p className={guessesLeft <= 1 ? 'guesses-critical' : undefined}>
+              {guessesLeft} {guessesLeft === 1 ? 'guess' : 'guesses'} left
+            </p>
           </div>
         )}
         {showScrollHint && !drawerCollapsed && !gameState.isComplete && (

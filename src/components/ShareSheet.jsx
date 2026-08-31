@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import { useEffect, useState } from 'react'
 import { generateShareText, createStoryShareImage, copyTextToClipboard, tryWebShare } from '../data/shareUtils'
 
@@ -117,9 +118,9 @@ export default function ShareSheet({ result, open, onClose }) {
         </div>
         {status && status !== 'preparing' && status !== 'sharing' && (
           <div style={styles.statusSmall}>
-            {status === 'done' && 'Shared ✅'}
-            {status === 'copied' && 'Copied ✅'}
-            {status === 'saved' && 'Saved ✅'}
+            {status === 'done' && <><Icon name="check" /> Shared</>}
+            {status === 'copied' && <><Icon name="check" /> Copied</>}
+            {status === 'saved' && <><Icon name="check" /> Saved</>}
             {status === 'failed' && 'Share failed'}
             {status === 'canceled' && 'Share canceled'}
           </div>

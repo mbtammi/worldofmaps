@@ -714,3 +714,54 @@
 .legend-labels span {
   font-weight: 400;
 }
+
+/* Guess budget: one pip per guess, dimming as they're spent. Small and quiet — the point
+   is peripheral awareness of the limit, not a scoreboard. */
+.guess-pips {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: -4px 0 12px;
+}
+
+.guess-pip {
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--textPrimary);
+  opacity: 0.55;
+  transition: opacity 0.3s ease, background 0.3s ease;
+}
+
+.guess-pip-used {
+  background: #e05260;
+  opacity: 0.85;
+}
+
+.guesses-critical {
+  color: #ff8a95;
+  font-weight: 600;
+}
+
+/* Countdown to the next daily reset, in place of the old reload button. */
+.next-puzzle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 14px 0 4px;
+}
+
+.next-puzzle-label {
+  font-size: 0.68em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.next-puzzle-clock {
+  font-size: 1.5em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--textPrimary);
+}

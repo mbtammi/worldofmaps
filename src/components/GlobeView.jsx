@@ -19,16 +19,20 @@ function GlobeView({ dataset, showTooltips = false }) {
     
     const map = {}
     dataset.data.forEach(item => {
-      // Add entries for both ISO codes and name
-      map[item.iso_a2] = item.value
-      map[item.iso_a3] = item.value
-      map[item.name.toLowerCase()] = item.value
+      // Only index keys the row actually has. Writing an undefined key lands on the literal
+      // "undefined" property, which then matches every polygon that lacks that code.
+      if (item.iso_a2) map[item.iso_a2] = item.value
+      if (item.iso_a3) map[item.iso_a3] = item.value
+      if (item.name) map[String(item.name).toLowerCase()] = item.value
     })
     return map
   }, [dataset])
 
   // Memoize max value calculation
-  const maxValue = useMemo(() => Math.max(...Object.values(dataMap)), [dataMap])
+  const maxValue = useMemo(() => {
+    const nums = Object.values(dataMap).filter(v => typeof v === 'number' && !Number.isNaN(v))
+    return nums.length ? Math.max(...nums) : 1
+  }, [dataMap])
 
   // Update globe properties when theme changes
   useEffect(() => {
@@ -49,6 +53,11 @@ function GlobeView({ dataset, showTooltips = false }) {
             canvas.width = 2
             canvas.height = 1
             const ctx = canvas.getContext('2d')
+            // The sphere material is opaque, so a translucent fill bakes an alpha-only texture
+            // that renders as a solid black ball over half the choropleth. Composite the theme
+            // colour onto an opaque base first.
+            ctx.fillStyle = '#16213e'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
             ctx.fillStyle = themeWaterColor
             ctx.fillRect(0, 0, canvas.width, canvas.height)
             flatUrl = canvas.toDataURL('image/png')
@@ -89,7 +98,7 @@ function GlobeView({ dataset, showTooltips = false }) {
 
   // Dynamic color scale based on CSS custom properties - optimized with theme support
   const getColor = useMemo(() => (value) => {
-    if (!value || value === 0) {
+    if (value == null || Number.isNaN(value)) {
       // Get no-data color from CSS custom property
       const noDataColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--noDataColor').trim() || '#4a5568'
@@ -136,8 +145,10 @@ function GlobeView({ dataset, showTooltips = false }) {
           const iso3 = country.properties.ISO_A3 || country.properties.iso_a3
           const countryName = country.properties.NAME || country.properties.name || country.properties.NAME_EN || 'Unknown'
           
-          // Try multiple lookup strategies
-          let value = dataMap[iso2] || dataMap[iso3] || dataMap[countryName.toLowerCase()] || 0
+          // Try each join key in turn. `||` chaining would treat a genuine 0 as a miss.
+          const value = [iso2, iso3, countryName.toLowerCase()]
+            .map(k => (k ? dataMap[k] : undefined))
+            .find(v => typeof v === 'number' && !Number.isNaN(v)) ?? null
           
           const color = getColor(value)
           
@@ -247,8 +258,14 @@ function GlobeView({ dataset, showTooltips = false }) {
         polygonCapColor={d => d.color}
         polygonSideColor={d => d.color}
         polygonStrokeColor={() => 'rgba(255,255,255,0.15)'}
-        polygonAltitude={0.005} // Much lower altitude for better performance
-        polygonCapCurvatureResolution={5} // Lower resolution for better performance
+        // capCurvatureResolution is in angular DEGREES, so a bigger number is a coarser cap.
+        // At 5° a large country's cap was tessellated so crudely that its middle sagged below
+        // the country's own raised outline, punching dark wedges through the interior of
+        // Algeria, Sudan, DR Congo and friends. 1° costs a few thousand extra triangles and
+        // renders correctly. The altitude is raised off 0.005 as well, which was tight enough
+        // to z-fight with the sphere at this camera distance.
+        polygonAltitude={0.02}
+        polygonCapCurvatureResolution={1}
         polygonLabel={showTooltips ? (d => {
           const name = d.countryName || d.properties?.NAME || 'Unknown'
           return `<b>${name}</b>`
@@ -261,7 +278,15 @@ function GlobeView({ dataset, showTooltips = false }) {
         
         // Interaction
         onGlobeReady={() => {
-          // Dev log removed to prevent revealing data in production
+          // globe.gl lights the sphere with a strong directional light, which buries half the
+          // choropleth in shadow — unreadable for a data map. Rebalance toward ambient so every
+          // country is comparable, keeping a little directional for surface depth.
+          try {
+            globeEl.current?.scene()?.traverse(obj => {
+              if (obj.isAmbientLight) obj.intensity = Math.PI * 1.15
+              else if (obj.isDirectionalLight) obj.intensity = Math.PI * 0.12
+            })
+          } catch { /* lighting is cosmetic — never block the globe on it */ }
           setIsLoading(false)
           // Ensure canvas id after ready
           try {

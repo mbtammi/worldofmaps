@@ -5,6 +5,7 @@ import { fetchDataset } from '../data/dataFetcher'
 import { createGameState, processGuess, finalizeGame } from '../data/gameManager'
 import { getLeaderboardData } from '../data/gameStats'
 import { getAllThemes, getNextTheme, applyTheme, initializeTheme } from '../data/themeManager'
+import Icon from './Icon'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import './DailyGame.css'
@@ -118,7 +119,7 @@ export default function FreePlayGame() {
           console.log(`🎯 Trying dataset: ${random.id} (attempt ${attempts + 1})`)
           
           const full = await fetchDataset(random.id)
-          const gs = createGameState(full)
+          const gs = createGameState(full, { limited: false })
           setGameState(gs)
           setStats(getLeaderboardData(full))
           console.log(`✅ Successfully loaded dataset: ${random.id}`)
@@ -175,11 +176,11 @@ export default function FreePlayGame() {
     return (
       <div className="daily-game">
         <div className="loading">
-          <div className="loading-globe">🌍</div>
+          <div className="loading-globe"><Icon name="globe" /></div>
           <div>Loading random map...</div>
           {loadingSlowWarning && (
             <div className="loading-slow-warning">
-              ⏱️ Taking longer than expected... Please hold on.
+              <Icon name="clock" /> Taking longer than expected… Please hold on.
             </div>
           )}
         </div>
@@ -191,7 +192,7 @@ export default function FreePlayGame() {
     return (
       <div className="daily-game">
         <div className="loading">
-          <div className="loading-globe">⚠️</div>
+          <div className="loading-globe"><Icon name="alert" /></div>
           <div>Failed to load dataset</div>
           <button 
             className="option-btn" 
@@ -212,21 +213,21 @@ export default function FreePlayGame() {
       {missedGuessToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(220,53,69,0.9)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8,animation:'slideDown 0.3s ease'}}>
           {/* <span> Incorrect</span> */}
-          <span style={{opacity:0.85}}>❌ Try again!</span>
+          <span style={{opacity:0.85,display:'flex',alignItems:'center',gap:6}}><Icon name="close" /> Try again!</span>
         </div>
       )}
       <GlobeView dataset={gameState.dataset} showTooltips={showTooltips} />
       <div className="top-left-title">Free Play</div>
       <div className="top-right-controls">
-        <button className="control-btn" onClick={() => window.location.href = '/landing'}>⌂</button>
-        <button className="control-btn" onClick={handleThemeSwitch}>{getAllThemes().find(t=>t.id===currentTheme)?.icon || '🌙'}</button>
+        <button className="control-btn" onClick={() => window.location.href = '/landing'}><Icon name="home" /></button>
+        <button className="control-btn" onClick={handleThemeSwitch}><Icon name={getAllThemes().find(t=>t.id===currentTheme)?.icon || 'moon'} /></button>
         <div className="menu-container">
           <button className="control-btn" onClick={() => setShowMenu(!showMenu)}>⋯</button>
           {showMenu && (
             <div className="dropdown-menu">
-              <button className="menu-item" onClick={() => { setShowTooltips(!showTooltips); setShowMenu(false) }}>{showTooltips ? '🗺 Hide Countries' : '🗺 Show Countries'}</button>
-              <button className="menu-item" onClick={() => { setShowMenu(false); loadRandomDataset() }}>🔁 New Random Map</button>
-              <button className="menu-item" onClick={() => setShowMenu(false)}>📊 Stats (Daily only)</button>
+              <button className="menu-item" onClick={() => { setShowTooltips(!showTooltips); setShowMenu(false) }}><><Icon name="map" /> {showTooltips ? 'Hide Countries' : 'Show Countries'}</></button>
+              <button className="menu-item" onClick={() => { setShowMenu(false); loadRandomDataset() }}><Icon name="dice" /> New Random Map</button>
+              <button className="menu-item" onClick={() => setShowMenu(false)}><Icon name="chart" /> Stats (Daily only)</button>
             </div>
           )}
         </div>
@@ -295,13 +296,13 @@ export default function FreePlayGame() {
           <div className="game-results">
             {gameState.isWon ? (
               <div className="win-message">
-                <h2>🎉 Correct!</h2>
+                <h2><Icon name="check" /> Correct!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p className="fun-fact">{gameState.dataset.funFact}</p>
               </div>
             ) : (
               <div className="lose-message">
-                <h2>😔 Game Over!</h2>
+                <h2><Icon name="close" /> Game Over!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p>{gameState.dataset.description}</p>
               </div>

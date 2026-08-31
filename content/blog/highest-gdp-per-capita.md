@@ -2,12 +2,13 @@
 title: "The 10 Countries with the Highest GDP per Capita (2024)"
 description: "Which countries lead the world in gdp per capita? See the top 10 (and the bottom of the table) for 2024, measured in US dollars per person."
 slug: "highest-gdp-per-capita"
-date: "2026-05-26"
+date: "2026-08-31"
 tags: [economy, rankings]
 datasets: [gdp-per-capita]
+noindex: true
 ---
 
-Luxembourg leads global GDP per capita, topping $100k per person. Across 210 countries with 2024 data, **Monaco** tops the table for gdp per capita (288,001 US dollars per person), while **Burundi** sits at the bottom (219.4).
+Luxembourg leads global GDP per capita, topping $100k per person. Across 210 countries with 2024 data, **Monaco** tops the table for gdp per capita at 288,001, while **Burundi** sits at the bottom on 219.4.
 
 ## The top 10
 
@@ -30,6 +31,6 @@ Luxembourg leads global GDP per capita, topping $100k per person. Across 210 cou
 
 ## What the numbers show
 
-The global average sits at about 23,167 US dollars per person, with 69 of 210 countries above it. The median country (8,452) trails the leader by a wide margin. The top country reports roughly 1,313× the figure of the lowest — a reminder of how unevenly gdp per capita is distributed.
+The global average sits at about 23,167, with 69 of 210 countries above it and a median of 8,452. Monaco reports roughly 1,313× the figure of Burundi — a reminder of how unevenly income is spread.
 
 Explore the complete, sortable ranking on the [GDP per Capita by country map](/atlas/gdp-per-capita), or test your instincts in the [daily map-guessing game](/). Data: World Bank Open Data, 2024.

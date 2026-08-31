@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import Icon from './Icon'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import { getDateStringForDaysAgo } from '../data/dailyChallenge'
@@ -82,7 +83,7 @@ export default function ArchiveIndex() {
                     <span className="archive-dow">{dayOfWeek(d)}</span>
                     <span>{formatLong(d)}</span>
                   </span>
-                  {isPlayed && <span className="archive-badge">✓ Played</span>}
+                  {isPlayed && <span className="archive-badge"><Icon name="check" /> Played</span>}
                 </Link>
               </li>
             )

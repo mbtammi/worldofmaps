@@ -9,13 +9,11 @@
 // - Packages like react-share only open URL/text-based share intents (Twitter/X, WhatsApp, Telegram, etc.) and cannot push a generated canvas image to stories.
 // - We therefore provide both: system share attempt + per-platform URL links + save image fallback.
 
-// Total options the daily challenge presents — varies by mode:
-//   normal mode = 10 options (default)
-//   hard mode   = 4 options (3 wrong + 1 correct)
-// The share grid is fixed-width at this size per mode so the visual fingerprint is
-// consistent across days within the same mode.
-const SHARE_GRID_SIZE_NORMAL = 10
-const SHARE_GRID_SIZE_HARD = 4
+// The share grid shows the guess budget, not the option count — a row of 10 squares for a
+// 5-guess game reads as a much easier result than it was. Keep these in step with
+// MAX_GUESSES_* in gameManager.js; the score denominator uses the same numbers.
+const SHARE_GRID_SIZE_NORMAL = 5
+const SHARE_GRID_SIZE_HARD = 2
 
 function formatDurationShort(ms) {
   if (!ms || ms < 0) return ''

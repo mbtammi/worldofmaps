@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import Icon from './components/Icon'
 import Landing from './components/Landing'
 import About from './components/About'
 import HowToPlay from './components/HowToPlay'
@@ -29,9 +30,10 @@ function GameFallback() {
         height: '100vh',
         fontSize: '2.5rem',
         background: '#0b2545',
+        color: 'rgba(255,255,255,0.85)',
       }}
     >
-      🌍
+      <Icon name="globe" />
     </div>
   )
 }

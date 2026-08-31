@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Icon from './Icon'
 import { getCalculatedStats } from '../data/gameStats'
 import { getTimeUntilReset } from '../data/dailyChallenge'
 import './StatsModal.css'
@@ -52,7 +53,7 @@ export default function StatsModal({ open, onClose, currentGuessBucket = null, o
             <span className="stats-cell-label">Win&nbsp;%</span>
           </div>
           <div className="stats-cell stats-cell-streak">
-            <span className="stats-cell-value">🔥&nbsp;{s.displayedStreak || 0}</span>
+            <span className="stats-cell-value"><Icon name="flame" />&nbsp;{s.displayedStreak || 0}</span>
             <span className="stats-cell-label">Current streak</span>
           </div>
           <div className="stats-cell">
@@ -64,7 +65,7 @@ export default function StatsModal({ open, onClose, currentGuessBucket = null, o
         <div className="stats-modal-secondary">
           <span>Avg guesses: <strong>{s.averageGuesses || '—'}</strong></span>
           {fastestSec != null && (
-            <span>Fastest: <strong>⚡ {fastestSec < 60 ? `${fastestSec}s` : `${Math.floor(fastestSec / 60)}m ${fastestSec % 60}s`}</strong></span>
+            <span>Fastest: <strong><Icon name="bolt" /> {fastestSec < 60 ? `${fastestSec}s` : `${Math.floor(fastestSec / 60)}m ${fastestSec % 60}s`}</strong></span>
           )}
         </div>
 

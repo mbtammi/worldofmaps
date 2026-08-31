@@ -96,7 +96,11 @@ const FUN_FACT_OVERRIDES = {
 
   // Culture & Lifestyle
   'coffee-consumption': 'Nordic countries are renowned for some of the world\'s highest coffee consumption.',
-  'alcohol-consumption': 'Alcohol consumption patterns reflect culture, policy, and income levels.'
+  'alcohol-consumption': 'Alcohol consumption patterns reflect culture, policy, and income levels.',
+
+  // Inverted scale: the RSF index scores worse press freedom higher, so the generic
+  // "X tops the list" fallback reads as praise for the least free country. Spell it out.
+  'press-freedom': 'On this index a LOWER score means more press freedom: Norway (6.7) is the freest country in the data, Eritrea (81.5) the most restricted.'
 }
 
 export function getFunFact(datasetId, data, title) {
@@ -104,14 +108,6 @@ export function getFunFact(datasetId, data, title) {
   const extremes = computeExtremes(data)
   if (!extremes) return `Interesting patterns emerge in global ${title.toLowerCase()} data.`
   const { min, max } = extremes
-  // Format numbers lightly (integers if large, one decimal if < 100 and not integer)
-  function fmt(v) {
-    if (v === 0) return '0'
-    if (Math.abs(v) >= 1000) return Math.round(v).toLocaleString()
-    if (Math.abs(v) >= 100) return Math.round(v).toString()
-    if (Math.abs(v) >= 10) return (+v.toFixed(1)).toString()
-    return (+v.toFixed(2)).toString()
-  }
   const maxPart = `${max.name} tops the list`
   const minPart = `${min.name} sits at the lower end`
   return `${maxPart}, while ${minPart}, showing wide variation.`

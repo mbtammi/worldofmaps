@@ -293,10 +293,15 @@ export async function getTodaysDataset() {
 
 // Get the next reset time
 function getNextResetTime() {
+  // Build the reset instant in UTC directly. The previous version started from *local*
+  // midnight tomorrow and then overwrote the UTC hour, which keeps the UTC calendar date —
+  // so for any timezone where local midnight lands on a different UTC day, the result was a
+  // time in the past and the countdown ran negative.
   const now = new Date()
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-  tomorrow.setUTCHours(CHALLENGE_CONFIG.RESET_HOUR_UTC, 0, 0, 0)
-  return tomorrow
+  const next = new Date(now)
+  next.setUTCHours(CHALLENGE_CONFIG.RESET_HOUR_UTC, 0, 0, 0)
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1)
+  return next
 }
 
 // Get time until next reset (for display purposes)

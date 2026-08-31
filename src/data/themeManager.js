@@ -13,7 +13,7 @@ const THEME_KEY = 'worldofthemaps_theme'
 export const themeConfigs = {
   [THEMES.DARK]: {
     name: 'Dark Mode',
-    icon: '🌙',
+    icon: 'moon',
     colors: {
       // Globe background
       globeBackground: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0c29 100%)',
@@ -23,7 +23,9 @@ export const themeConfigs = {
       
       // Globe atmosphere and water color
       globeAtmosphereColor: '#4a90e2',
-      globeWaterColor: 'rgba(0, 0, 0, 0)', // Transparent for space look
+      // Must be opaque: the ocean is painted onto the globe sphere, and a transparent value
+      // bakes an alpha-only texture that renders as a solid black ball, hiding the choropleth.
+      globeWaterColor: '#16213e', // Deep navy, matches the page gradient
       
       // UI elements
       glassBackground: 'rgba(0, 0, 0, 0.2)',
@@ -46,7 +48,7 @@ export const themeConfigs = {
   
   [THEMES.LIGHT]: {
     name: 'Light Mode',
-    icon: '☀️',
+    icon: 'sun',
     colors: {
       // Globe background  
       globeBackground: 'linear-gradient(135deg, #f7fafc 0%, #e2e8f0 50%, #cbd5e0 100%)',
@@ -81,7 +83,7 @@ export const themeConfigs = {
   
   [THEMES.COLOR]: {
     name: 'Color Mode', 
-    icon: '🌈',
+    icon: 'palette',
     colors: {
       // Globe background
       globeBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
@@ -91,7 +93,7 @@ export const themeConfigs = {
       
       // Globe atmosphere and water color
       globeAtmosphereColor: '#4a90e2',
-      globeWaterColor: 'rgba(0, 0, 0, 8)', // Transparent to show earth texture
+      globeWaterColor: '#0b1a2e', // Unused when globeImageUrl is set, but must stay opaque
       
       // UI elements
       glassBackground: 'rgba(255, 255, 255, 0.15)',

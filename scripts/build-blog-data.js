@@ -50,6 +50,9 @@ for (const file of files) {
     author: data.author || 'World of Maps',
     tags: Array.isArray(data.tags) ? data.tags : [],
     datasets: Array.isArray(data.datasets) ? data.datasets : [],
+    // noindex keeps a post reachable for humans while dropping it from the sitemap,
+    // llms.txt and the crawlers. Used for pages that duplicate a stronger /atlas page.
+    noindex: data.noindex === true,
     readingMinutes: Math.max(1, Math.round(words / 200)),
     html,
   }
@@ -61,10 +64,16 @@ for (const file of files) {
     date: post.date,
     tags: post.tags,
     readingMinutes: post.readingMinutes,
+    noindex: post.noindex,
   })
   console.log(`  ✓ ${slug} (${post.readingMinutes} min)`)
 }
 
-index.sort((a, b) => String(b.date).localeCompare(String(a.date)))
+// Indexed posts lead; the noindex ranking pages fall to the bottom. Dates tie often
+// (a regeneration restamps them all), so the noindex flag is the primary sort.
+index.sort(
+  (a, b) =>
+    Number(a.noindex) - Number(b.noindex) || String(b.date).localeCompare(String(a.date)),
+)
 writeFileSync(join(OUT_DIR, '_index.json'), JSON.stringify(index, null, 2))
 console.log(`\nBlog data built: ${index.length} published, ${skipped} draft(s) skipped.`)

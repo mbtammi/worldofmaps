@@ -5,7 +5,7 @@ import { SITE_URL, DEFAULT_IMAGE } from '../seo/routeMeta'
 // canonical and Open Graph / Twitter tags in sync per route.
 // For crawler-visible HTML, content routes are additionally prerendered at build time.
 // Usage: <SEO title="Page Title" description="Desc" path="/about" />
-export default function SEO({ title, description, path = '/', keywords = [], image = DEFAULT_IMAGE }) {
+export default function SEO({ title, description, path = '/', keywords = [], image = DEFAULT_IMAGE, noindex = false }) {
   useEffect(() => {
     if (title) document.title = title
 
@@ -24,6 +24,8 @@ export default function SEO({ title, description, path = '/', keywords = [], ima
     }
 
     setMeta('name', 'description', description)
+    // Keep the tag present either way so a client-side route change can flip it back.
+    setMeta('name', 'robots', noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large')
     if (keywords.length) setMeta('name', 'keywords', keywords.join(', '))
 
     // Open Graph
@@ -46,7 +48,7 @@ export default function SEO({ title, description, path = '/', keywords = [], ima
       document.head.appendChild(link)
     }
     link.setAttribute('href', url)
-  }, [title, description, path, keywords, image])
+  }, [title, description, path, keywords, image, noindex])
 
   return null
 }

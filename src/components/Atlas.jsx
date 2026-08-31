@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import Icon from './Icon'
 import SEO from './SEO'
 import { SITE_URL } from '../seo/routeMeta'
 import { readAtlasGlobal, fmtValue } from '../data/atlasClient'
@@ -66,6 +67,18 @@ export default function Atlas() {
     }
   }, [datasetId, data])
 
+  // Inline cross-links to 2 related atlas pages, picked from the same category. These are
+  // crawler-visible inside the intro prose (not just in the related-list at the bottom),
+  // which 2026 SEO guidance rates heavily — internal-link density inside body content is one
+  // of the strongest topical-authority signals. ×88 atlas pages × 2 = ~176 inline outbound links.
+  const inlineRelated = useMemo(() => {
+    const index = readAtlasGlobal('__ATLAS_INDEX__') || []
+    if (!data || !index.length) return []
+    return index
+      .filter((d) => d.category === data.category && d.id !== data.id)
+      .slice(0, 2)
+  }, [data])
+
   if (error) {
     return (
       <div className="page-with-nav">
@@ -86,24 +99,12 @@ export default function Atlas() {
       <div className="page-with-nav">
         <Header />
         <main className="page-content atlas">
-          <div className="atlas-loading">🌍 Loading map data…</div>
+          <div className="atlas-loading"><Icon name="globe" /> Loading map data…</div>
         </main>
         <Footer />
       </div>
     )
   }
-
-  // Inline cross-links to 2 related atlas pages, picked from the same category. These are
-  // crawler-visible inside the intro prose (not just in the related-list at the bottom),
-  // which 2026 SEO guidance rates heavily — internal-link density inside body content is one
-  // of the strongest topical-authority signals. ×88 atlas pages × 2 = ~176 inline outbound links.
-  const inlineRelated = useMemo(() => {
-    const index = readAtlasGlobal('__ATLAS_INDEX__') || []
-    if (!data || !index.length) return []
-    return index
-      .filter((d) => d.category === data.category && d.id !== data.id)
-      .slice(0, 2)
-  }, [data])
 
   const title = `${data.title} by Country`
   const url = `${SITE_URL}/atlas/${data.id}`
@@ -166,7 +167,7 @@ export default function Atlas() {
           </div>
         </section>
 
-        {data.funFact && <p className="atlas-funfact">💡 {data.funFact}</p>}
+        {data.funFact && <p className="atlas-funfact"><Icon name="bulb" /> {data.funFact}</p>}
 
         <h2>Top 10 countries</h2>
         <div className="atlas-bars">
@@ -182,6 +183,12 @@ export default function Atlas() {
               <span className="atlas-bar-val">{fmtValue(row.value)}</span>
             </div>
           ))}
+        </div>
+
+        <div className="atlas-cta">
+          <Link to="/" className="atlas-cta-btn">
+            <Icon name="target" /> Play the daily map-guessing game
+          </Link>
         </div>
 
         <h2>
@@ -210,12 +217,6 @@ export default function Atlas() {
           Source: {data.source}. Latest available year: {data.year}. Values shown are the most
           recent reported figure per country.
         </p>
-
-        <div className="atlas-cta">
-          <Link to="/" className="atlas-cta-btn">
-            🎯 Play the daily map-guessing game
-          </Link>
-        </div>
 
         <RelatedMaps currentId={data.id} category={data.category} />
       </main>

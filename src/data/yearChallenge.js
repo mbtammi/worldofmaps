@@ -38,8 +38,8 @@ export async function getTodaysYearChallenge() {
 // Pick a sensible distance bucket for the result screen.
 //   0 → bullseye, 1 → great, 2–3 → close, otherwise → miss.
 export function scoreYearGuess(distance) {
-  if (distance === 0) return { emoji: '🎯', label: 'Bullseye!', tone: 'win' }
-  if (distance === 1) return { emoji: '⭐', label: 'Just 1 year off — great guess', tone: 'win' }
-  if (distance <= 3) return { emoji: '👍', label: `${distance} years off — close`, tone: 'close' }
-  return { emoji: '😬', label: `${distance} years off`, tone: 'miss' }
+  if (distance === 0) return { icon: 'target', label: 'Bullseye!', tone: 'win' }
+  if (distance === 1) return { icon: 'trophy', label: 'Just 1 year off — great guess', tone: 'win' }
+  if (distance <= 3) return { icon: 'check', label: `${distance} years off — close`, tone: 'close' }
+  return { icon: 'close', label: `${distance} years off`, tone: 'miss' }
 }

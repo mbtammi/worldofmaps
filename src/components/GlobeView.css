@@ -77,16 +77,6 @@
   height: 80px;
 }
 
-.globe-spinner::before {
-  content: '🌍';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 2.5rem;
-  animation: globe-rotate 2s linear infinite;
-}
-
 .globe-spinner::after {
   content: '';
   position: absolute;
@@ -98,11 +88,6 @@
   border-top: 2px solid var(--textPrimary, rgba(255, 255, 255, 0.8));
   border-radius: 50%;
   animation: orbit-spin 1.5s linear infinite;
-}
-
-@keyframes globe-rotate {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 @keyframes orbit-spin {

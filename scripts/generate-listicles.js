@@ -17,17 +17,20 @@ mkdirSync(OUT_DIR, { recursive: true })
 const TODAY = new Date().toISOString().slice(0, 10)
 
 // Curated datasets worth an editorial ranking post, with a tag and a "unit" hint for prose.
+// `unit` reads as a full phrase ("measured in ..."); `suffix` is what attaches to a bare
+// number in running text; `noun` is a noun phrase that survives being dropped mid-sentence
+// (the dataset title does not — "how unevenly internet users is distributed").
 const POSTS = [
-  { id: 'gdp-per-capita', tag: 'economy', unit: 'US dollars per person' },
-  { id: 'life-expectancy', tag: 'health', unit: 'years' },
-  { id: 'population-density', tag: 'demographics', unit: 'people per km²' },
-  { id: 'internet-users', tag: 'technology', unit: '% of population' },
-  { id: 'forest-coverage', tag: 'environment', unit: '% of land area' },
-  { id: 'renewable-energy', tag: 'environment', unit: '% of energy use' },
-  { id: 'fertility-rate', tag: 'demographics', unit: 'births per woman' },
-  { id: 'healthcare-expenditure', tag: 'health', unit: '% of GDP' },
-  { id: 'urban-population', tag: 'demographics', unit: '% of population' },
-  { id: 'population-total', tag: 'demographics', unit: 'people' },
+  { id: 'gdp-per-capita', tag: 'economy', unit: 'US dollars per person', suffix: '', noun: 'income' },
+  { id: 'life-expectancy', tag: 'health', unit: 'years', suffix: ' years', noun: 'life expectancy' },
+  { id: 'population-density', tag: 'demographics', unit: 'people per km²', suffix: '/km²', noun: 'population density' },
+  { id: 'internet-users', tag: 'technology', unit: '% of population', suffix: '%', noun: 'internet access' },
+  { id: 'forest-coverage', tag: 'environment', unit: '% of land area', suffix: '%', noun: 'forest cover' },
+  { id: 'renewable-energy', tag: 'environment', unit: '% of energy use', suffix: '%', noun: 'renewable energy use' },
+  { id: 'fertility-rate', tag: 'demographics', unit: 'births per woman', suffix: '', noun: 'fertility' },
+  { id: 'healthcare-expenditure', tag: 'health', unit: '% of GDP', suffix: '%', noun: 'health spending' },
+  { id: 'urban-population', tag: 'demographics', unit: '% of population', suffix: '%', noun: 'urbanisation' },
+  { id: 'population-total', tag: 'demographics', unit: 'people', suffix: '', noun: 'population' },
 ]
 
 function fmt(v) {
@@ -63,16 +66,19 @@ function buildPost(meta) {
   lines.push(`date: "${TODAY}"`)
   lines.push(`tags: [${meta.tag}, rankings]`)
   lines.push(`datasets: [${meta.id}]`)
+  // Duplicates /atlas/<id>, which shows the same ranking plus the full table and JSON-LD.
+  // Kept for readers, dropped from the sitemap so the two don't compete.
+  lines.push('noindex: true')
   lines.push('---')
   lines.push('')
   lines.push(
-    `${d.funFact} Across ${d.stats.count} countries with ${d.year} data, **${top.name}** tops the table for ${d.title.toLowerCase()} (${fmt(top.value)} ${meta.unit}), while **${bottom.name}** sits at the bottom (${fmt(bottom.value)}).`,
+    `${d.funFact} Across ${d.stats.count} countries with ${d.year} data, **${top.name}** tops the table for ${d.title.toLowerCase()} at ${fmt(top.value)}${meta.suffix}, while **${bottom.name}** sits at the bottom on ${fmt(bottom.value)}${meta.suffix}.`,
   )
   lines.push('')
   lines.push('## The top 10')
   lines.push('')
   rows.slice(0, 10).forEach((r, i) => {
-    lines.push(`${i + 1}. **${r.name}** — ${fmt(r.value)}`)
+    lines.push(`${i + 1}. **${r.name}** — ${fmt(r.value)}${meta.suffix}`)
   })
   lines.push('')
   lines.push('## At the other end of the table')
@@ -81,18 +87,17 @@ function buildPost(meta) {
     .slice(-3)
     .reverse()
     .forEach((r) => {
-      lines.push(`- **${r.name}** — ${fmt(r.value)}`)
+      lines.push(`- **${r.name}** — ${fmt(r.value)}${meta.suffix}`)
     })
   lines.push('')
   lines.push('## What the numbers show')
   lines.push('')
   const insights = [
-    `The global average sits at about ${fmt(d.stats.avg)} ${meta.unit}, with ${aboveAvg} of ${d.stats.count} countries above it.`,
-    `The median country (${fmt(median)}) trails the leader by a wide margin.`,
+    `The global average sits at about ${fmt(d.stats.avg)}${meta.suffix}, with ${aboveAvg} of ${d.stats.count} countries above it and a median of ${fmt(median)}${meta.suffix}.`,
   ]
   if (ratio && ratio > 1.5) {
     insights.push(
-      `The top country reports roughly ${fmt(ratio)}× the figure of the lowest — a reminder of how unevenly ${d.title.toLowerCase()} is distributed.`,
+      `${top.name} reports roughly ${fmt(ratio)}× the figure of ${bottom.name} — a reminder of how unevenly ${meta.noun} is spread.`,
     )
   }
   lines.push(insights.join(' '))

@@ -46,6 +46,9 @@ function applyHead(html, meta) {
   const url = `${SITE_URL}${meta.path === '/' ? '/' : meta.path}`
   let out = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`)
   out = setMeta(out, 'name', 'description', meta.description)
+  // The static HTML has to carry the robots tag itself — a crawler that never runs the app
+  // would otherwise index a page the client-side <SEO> meant to hide.
+  if (meta.noindex) out = setMeta(out, 'name', 'robots', 'noindex, follow')
   if (meta.keywords?.length) out = setMeta(out, 'name', 'keywords', meta.keywords.join(', '))
   out = setMeta(out, 'property', 'og:title', meta.title)
   out = setMeta(out, 'property', 'og:description', meta.description)
@@ -148,6 +151,7 @@ console.log(`✓ ${atlasCount} atlas detail pages`)
 
 // 3) One page per blog post.
 let blogCount = 0
+let noindexBlog = 0
 for (const entry of blogIndex) {
   const file = join(blogDataDir, `${entry.slug}.json`)
   if (!existsSync(file)) continue
@@ -158,6 +162,7 @@ for (const entry of blogIndex) {
     title: `${post.title} | World of Maps`,
     description: post.description,
     keywords: post.tags,
+    noindex: post.noindex,
   }
   globalThis.__BLOG_POST__ = post
   globalThis.__BLOG_INDEX__ = blogIndex
@@ -167,10 +172,13 @@ for (const entry of blogIndex) {
   ])
   delete globalThis.__BLOG_POST__
   delete globalThis.__BLOG_INDEX__
-  generated.push(route)
+  // noindex posts still get a static page — a crawler has to fetch it to read the tag —
+  // but they stay out of the sitemap and llms.txt so nothing actively advertises them.
+  if (post.noindex) noindexBlog++
+  else generated.push(route)
   blogCount++
 }
-console.log(`✓ ${blogCount} blog posts`)
+console.log(`✓ ${blogCount} blog posts (${noindexBlog} noindex)`)
 
 // 4) Past-day archive pages — last 30 days at /daily/:date.
 // Each is statically rendered with a unique title/description so search engines have a
@@ -278,7 +286,7 @@ for (const [category, entries] of atlasByCategory) {
 }
 
 llmsLines.push('## Articles', '')
-for (const p of blogIndex) {
+for (const p of blogIndex.filter((e) => !e.noindex)) {
   llmsLines.push(`- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`)
 }
 
@@ -292,6 +300,6 @@ llmsLines.push(
 )
 
 writeFileSync(join(distDir, 'llms.txt'), llmsLines.join('\n'))
-console.log(`✓ llms.txt (${atlasIndex.length} datasets, ${blogIndex.length} articles)`)
+console.log(`✓ llms.txt (${atlasIndex.length} datasets, ${blogIndex.filter((e) => !e.noindex).length} articles)`)
 
 console.log(`Prerender complete: ${generated.length} routes.`)

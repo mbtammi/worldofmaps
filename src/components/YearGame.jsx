@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import GlobeView from './GlobeView'
+import Icon from './Icon'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import { getTodaysYearChallenge, scoreYearGuess } from '../data/yearChallenge'
 import { initializeTheme } from '../data/themeManager'
+import { haptic } from '../data/haptics'
 import './YearGame.css'
 
 const STORAGE_KEY = (day) => `worldofthemaps_year_progress_${day}`
@@ -69,14 +71,13 @@ export default function YearGame() {
     return () => { cancelled = true }
   }, [])
 
-  // Build the dataset shape GlobeView expects (iso_a3 + value is enough — the polygon enrichment
-  // matches by iso3 first). We re-add iso_a2 as a slice for completeness.
+  // Build the dataset shape GlobeView expects. iso_a3 is the only join key year snapshots
+  // carry, and the topology is annotated with iso_a3 by scripts/annotate-topojson.mjs.
   const globeDataset = useMemo(() => {
     if (!challenge) return null
     return {
       data: challenge.yearData.map((d) => ({
         iso_a3: d.iso_a3,
-        iso_a2: d.iso_a3.slice(0, 2),
         name: d.iso_a3,
         value: d.value,
       })),
@@ -89,6 +90,7 @@ export default function YearGame() {
   const handleSubmit = () => {
     if (submitted || !challenge || guess == null) return
     setSubmitted(true)
+    haptic(Math.abs(guess - challenge.year) <= 1 ? 'win' : 'wrong')
     try {
       localStorage.setItem(STORAGE_KEY(challenge.dayIndex), JSON.stringify({ guess, submitted: true }))
     } catch { /* ignore */ }
@@ -99,7 +101,7 @@ export default function YearGame() {
     return (
       <div className="daily-game year-mode">
         <SEO {...ROUTE_META['/year-mode']} />
-        <div className="loading"><div className="loading-globe">🗓️</div><div>Loading the year mystery…</div></div>
+        <div className="loading"><div className="loading-globe"><Icon name="calendar" /></div><div>Loading the year mystery…</div></div>
       </div>
     )
   }
@@ -108,7 +110,7 @@ export default function YearGame() {
       <div className="daily-game year-mode">
         <SEO {...ROUTE_META['/year-mode']} />
         <div className="loading">
-          <div className="loading-globe">⚠️</div>
+          <div className="loading-globe"><Icon name="alert" /></div>
           <div>Couldn't load year-mode data</div>
           <div className="loading-subtitle">{error}</div>
         </div>
@@ -124,8 +126,8 @@ export default function YearGame() {
       <div className="top-left-title">worldofthemaps</div>
 
       <div className="top-right-controls">
-        <button className="control-btn" onClick={() => (window.location.href = '/landing')} title="Home">⌂</button>
-        <button className="control-btn" onClick={() => (window.location.href = '/')} title="Daily game">🌍</button>
+        <button className="control-btn" onClick={() => (window.location.href = '/landing')} title="Home"><Icon name="home" /></button>
+        <button className="control-btn" onClick={() => (window.location.href = '/')} title="Daily game"><Icon name="globe" /></button>
       </div>
 
       <div className="year-banner">
@@ -156,7 +158,7 @@ export default function YearGame() {
           </>
         ) : (
           <div className={`year-result year-result-${score.tone}`}>
-            <div className="year-result-emoji">{score.emoji}</div>
+            <div className="year-result-emoji"><Icon name={score.icon} /></div>
             <div className="year-result-headline">{score.label}</div>
             <div className="year-result-detail">
               Actual year: <strong>{challenge.year}</strong> · You guessed: <strong>{guess}</strong>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import Icon from './Icon'
 import SEO from './SEO'
 import { SITE_URL } from '../seo/routeMeta'
 import { readInjected } from '../data/atlasClient'
@@ -67,7 +68,12 @@ export default function BlogPost() {
   const url = `${SITE_URL}/blog/${post.slug}`
   return (
     <div className="page-with-nav">
-      <SEO title={`${post.title} | World of Maps`} description={post.description} path={`/blog/${post.slug}`} />
+      <SEO
+        title={`${post.title} | World of Maps`}
+        description={post.description}
+        path={`/blog/${post.slug}`}
+        noindex={post.noindex}
+      />
       <Header />
       <main className="page-content blog">
         <nav className="blog-breadcrumb" aria-label="Breadcrumb">
@@ -96,7 +102,7 @@ export default function BlogPost() {
 
         <div className="blog-cta">
           <Link to="/" className="blog-cta-btn">
-            🎯 Play the daily map-guessing game
+            <Icon name="target" /> Play the daily map-guessing game
           </Link>
         </div>
       </main>

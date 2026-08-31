@@ -74,3 +74,9 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Inline icons sit on the text baseline by default, which reads as slightly too low next to
+   a cap-height glyph. Nudge them onto the optical centre wherever they sit in running text. */
+svg {
+  vertical-align: -0.125em;
+}
