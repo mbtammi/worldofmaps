@@ -1,3 +1,13 @@
+/* Every element sizes to its border box. Without this, any rule combining `width: 100%`
+   with padding or a border overflows its parent by exactly that padding — which is what made
+   the feature-request inputs 26px wider than the modal holding them. Four rules across the
+   app hit this; fixing it here rather than per-rule stops the next one happening. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 :root {

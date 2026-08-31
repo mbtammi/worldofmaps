@@ -108,13 +108,19 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  min-width: 150px;
+  /* Sized to the longest label rather than a guess. The items used to overflow this box
+     (width:100% plus padding, before border-box), which accidentally kept them on one line;
+     with correct sizing 150px is too narrow and every label wrapped. */
+  min-width: max-content;
   z-index: 20;
   overflow: hidden;
 }
 
 .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
   width: 100%;
   padding: 12px 16px;
   background: none;
