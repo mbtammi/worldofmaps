@@ -259,12 +259,13 @@ function GlobeView({ dataset, showTooltips = false }) {
         polygonSideColor={d => d.color}
         polygonStrokeColor={() => 'rgba(255,255,255,0.15)'}
         // capCurvatureResolution is in angular DEGREES, so a bigger number is a coarser cap.
-        // At 5° a large country's cap was tessellated so crudely that its middle sagged below
-        // the country's own raised outline, punching dark wedges through the interior of
-        // Algeria, Sudan, DR Congo and friends. 1° costs a few thousand extra triangles and
-        // renders correctly. The altitude is raised off 0.005 as well, which was tight enough
-        // to z-fight with the sphere at this camera distance.
-        polygonAltitude={0.02}
+        // At the old 5° a large country's cap was tessellated crudely enough to sag below its
+        // own outline; 1° costs a few thousand triangles and follows the sphere properly.
+        // Altitude stays low so countries read as shaded regions rather than extruded blocks.
+        // Note: `preserveDrawingBuffer` (needed for share-image capture) lets a screenshot read
+        // the frame mid-draw, so screen captures of this globe show hatching that isn't on
+        // screen. Judge rendering changes here in a live browser, not from a screenshot.
+        polygonAltitude={0.005}
         polygonCapCurvatureResolution={1}
         polygonLabel={showTooltips ? (d => {
           const name = d.countryName || d.properties?.NAME || 'Unknown'
