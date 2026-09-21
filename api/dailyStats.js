@@ -61,6 +61,7 @@ export default async function handler(req, res) {
           avgGuesses: null,
           funnel,
           completionRate: funnel.starts ? 0 : null,
+          storage: 'redis',
         })
       }
       const plays = parseInt(data.plays || '0')
@@ -106,13 +107,16 @@ export default async function handler(req, res) {
         updatedAt: data.updatedAt ? parseInt(data.updatedAt) : null,
         funnel,
         // starts -> plays is the completion rate; the gap is who gave up on the puzzle.
-        completionRate: funnel.starts ? +((plays / funnel.starts) * 100).toFixed(1) : null
+        completionRate: funnel.starts ? +((plays / funnel.starts) * 100).toFixed(1) : null,
+        storage: 'redis'
       })
     }
 
-    // In-memory fallback aggregation (not shared across functions, just placeholder dev)
+    // In-memory fallback: a per-lambda buffer that empties on every cold start and is not
+    // shared between the function that writes and the one that reads. Fine for local dev,
+    // useless in production - and indistinguishable from "nobody played" unless it says so.
     const filtered = memoryBuffer.filter(r => r.dayIndex === dayIndex)
-    if (!filtered.length) return res.status(200).json({ dayIndex, plays: 0, wins: 0, histogram: {}, avgGuesses: null })
+    if (!filtered.length) return res.status(200).json({ dayIndex, plays: 0, wins: 0, histogram: {}, avgGuesses: null, storage: 'memory' })
     const plays = filtered.length
     const wins = filtered.filter(r => r.winFlag).length
     const histogram = {}
@@ -124,7 +128,7 @@ export default async function handler(req, res) {
       if (r.winFlag && r.g === 1) firstTry++
     })
     const avgGuesses = +(sum / plays).toFixed(2)
-    return res.status(200).json({ dayIndex, plays, wins, histogram, avgGuesses, firstTry, firstTryRate: wins ? +(firstTry / wins * 100).toFixed(1) : 0 })
+    return res.status(200).json({ dayIndex, plays, wins, histogram, avgGuesses, firstTry, firstTryRate: wins ? +(firstTry / wins * 100).toFixed(1) : 0, storage: 'memory' })
   } catch (e) {
     console.error('dailyStats error', e)
     return res.status(500).json({ error: 'Server error' })

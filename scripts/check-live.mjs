@@ -105,3 +105,16 @@ if (failures.length) {
   process.exit(1)
 }
 console.log(`\nAll ${notes.length} live checks passed.`)
+
+// 9) Global stats need Upstash. Without UPSTASH_REDIS_REST_URL / _TOKEN the API silently
+//    falls back to a per-lambda buffer that empties on every cold start and is not shared
+//    between the function that writes results and the one that reads them - so every day
+//    reports zero, which is indistinguishable from "nobody has played". Fail loudly instead.
+const stats = await get(`${SITE}/api/dailyStats?dayIndex=1`)
+let storage = null
+try { storage = JSON.parse(stats.body).storage } catch { /* reported below */ }
+check(
+  storage === 'redis',
+  `global stats are backed by Redis (reported: ${storage ?? 'unparseable'})` +
+    (storage === 'memory' ? ' - set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel' : ''),
+)
