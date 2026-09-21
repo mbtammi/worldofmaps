@@ -1102,6 +1102,25 @@ function DailyGame() {
               )}
               <button className="option-btn" style={{background:'rgba(255,255,255,0.08)'}} onClick={()=> setShareSheetOpen(true)}>More Share Options</button>
             </div>
+
+            {/* A first-time player who finishes their only puzzle used to be told to come back
+                in 20 hours, with no way to keep playing. Free Play is unlimited and the archive
+                holds 30 days; neither was reachable from here. */}
+            <div className="keep-playing">
+              <span className="keep-playing-label">Not done yet?</span>
+              <div className="keep-playing-links">
+                <Link to="/play" className="keep-playing-btn">
+                  <Icon name="dice" /> Play a random map
+                </Link>
+                <Link to="/archive" className="keep-playing-btn">
+                  <Icon name="calendar" /> Past 30 days
+                </Link>
+                <Link to="/year-mode" className="keep-playing-btn">
+                  <Icon name="clock" /> Guess the year
+                </Link>
+              </div>
+              <span className="keep-playing-note">None of these affect your daily streak.</span>
+            </div>
             {shareStatus && (
               <div style={{marginTop:8,fontSize:'0.7em',opacity:0.8}}>
                 {shareStatus === 'preparing' && 'Generating image…'}

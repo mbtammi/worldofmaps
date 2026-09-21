@@ -771,3 +771,53 @@
   font-variant-numeric: tabular-nums;
   color: var(--textPrimary);
 }
+
+/* Keep-playing block on the end screen. The daily is one puzzle a day, which gives a brand
+   new player nothing to do after 90 seconds; Free Play and the archive already exist. */
+.keep-playing {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glassBorder);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keep-playing-label {
+  font-size: 0.72em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.keep-playing-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.keep-playing-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glassBorder);
+  background: var(--glassBackground);
+  color: var(--textPrimary);
+  font-size: 0.85em;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.keep-playing-btn:hover {
+  background: var(--buttonHover);
+  transform: translateY(-1px);
+}
+
+.keep-playing-note {
+  font-size: 0.65em;
+  opacity: 0.5;
+  text-align: center;
+}

@@ -4,24 +4,36 @@
 
 import { getCurrentDayIndex } from './dailyChallenge.js'
 
-// For v1 we only ship internet-users (the most visually dramatic change from 2000 to 2024).
-// Adding more datasets later = add an entry to scripts/build-year-data.js + extend this picker.
-export const YEAR_MODE_DATASET = 'internet-users'
+// Rotated by day index so the mode doesn't show the same puzzle forever. Must match the ids
+// built by scripts/build-year-data.js; scripts/check-year-mode.mjs asserts they line up.
+export const YEAR_MODE_DATASETS = [
+  'internet-users',
+  'mobile-subscriptions',
+  'child-mortality',
+  'electricity-access',
+  'life-expectancy',
+  'fertility-rate',
+]
 
-let _cached = null
-async function loadYearDataset() {
-  if (_cached) return _cached
-  const r = await fetch(`/data/year/${YEAR_MODE_DATASET}.json`)
+export function yearDatasetForDay(dayIndex) {
+  return YEAR_MODE_DATASETS[Math.abs(dayIndex) % YEAR_MODE_DATASETS.length]
+}
+
+const _cache = new Map()
+async function loadYearDataset(id) {
+  if (_cache.has(id)) return _cache.get(id)
+  const r = await fetch(`/data/year/${id}.json`)
   if (!r.ok) throw new Error(`Failed to load year-mode data: HTTP ${r.status}`)
-  _cached = await r.json()
-  return _cached
+  const data = await r.json()
+  _cache.set(id, data)
+  return data
 }
 
 export async function getTodaysYearChallenge() {
-  const data = await loadYearDataset()
   const dayIndex = getCurrentDayIndex()
+  const data = await loadYearDataset(yearDatasetForDay(dayIndex))
   const years = data.availableYears
-  const year = years[dayIndex % years.length]
+  const year = years[(dayIndex + Math.floor(dayIndex / YEAR_MODE_DATASETS.length)) % years.length]
   return {
     dayIndex,
     year,
@@ -29,6 +41,7 @@ export async function getTodaysYearChallenge() {
     title: data.title,
     description: data.description,
     unit: data.unit,
+    datasetId: data.id,
     startYear: data.startYear,
     endYear: data.endYear,
     availableYears: years,

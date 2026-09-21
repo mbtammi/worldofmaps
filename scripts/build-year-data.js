@@ -21,6 +21,9 @@ mkdirSync(OUT_DIR, { recursive: true })
 const START_YEAR = 2000
 const END_YEAR = 2024
 
+// Year mode asks which year a choropleth is from, so an indicator only makes a good puzzle
+// if it moved a lot between 2000 and 2024. These all changed enough to be readable from the
+// map's shape alone; slow-moving indicators (land area, languages) would be unguessable.
 const DATASETS = [
   {
     id: 'internet-users',
@@ -28,6 +31,41 @@ const DATASETS = [
     title: 'Internet Users',
     description: 'Share of the population using the internet (%).',
     unit: '%',
+  },
+  {
+    id: 'mobile-subscriptions',
+    indicator: 'IT.CEL.SETS.P2',
+    title: 'Mobile Subscriptions',
+    description: 'Mobile cellular subscriptions per 100 people.',
+    unit: ' per 100',
+  },
+  {
+    id: 'child-mortality',
+    indicator: 'SH.DYN.MORT',
+    title: 'Child Mortality',
+    description: 'Deaths before age five, per 1,000 live births.',
+    unit: ' per 1,000',
+  },
+  {
+    id: 'electricity-access',
+    indicator: 'EG.ELC.ACCS.ZS',
+    title: 'Electricity Access',
+    description: 'Share of the population with access to electricity (%).',
+    unit: '%',
+  },
+  {
+    id: 'life-expectancy',
+    indicator: 'SP.DYN.LE00.IN',
+    title: 'Life Expectancy',
+    description: 'Life expectancy at birth, in years.',
+    unit: ' years',
+  },
+  {
+    id: 'fertility-rate',
+    indicator: 'SP.DYN.TFRT.IN',
+    title: 'Fertility Rate',
+    description: 'Births per woman.',
+    unit: '',
   },
 ]
 
