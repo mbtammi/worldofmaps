@@ -50,7 +50,19 @@ export default async function handler(req, res) {
         yearStarts: num(events.year_start),
         yearSubmits: num(events.year_submit),
       }
-      if (!Object.keys(data).length) return res.status(200).json({ dayIndex, plays: 0, wins: 0, histogram: {}, avgGuesses: null })
+      // A day with starts but no finished games still has a story to tell - that is the
+      // abandonment case - so the funnel goes out even when the stats hash is empty.
+      if (!Object.keys(data).length) {
+        return res.status(200).json({
+          dayIndex,
+          plays: 0,
+          wins: 0,
+          histogram: {},
+          avgGuesses: null,
+          funnel,
+          completionRate: funnel.starts ? 0 : null,
+        })
+      }
       const plays = parseInt(data.plays || '0')
       const wins = parseInt(data.wins || '0')
       const firstTry = parseInt(data.firstTry || '0')
