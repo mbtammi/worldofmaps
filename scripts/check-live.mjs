@@ -99,13 +99,6 @@ for (const asset of ['/countries-110m.json', '/data/atlas/_index.json', '/data/y
   check(r.status === 200, `runtime asset present: ${asset}`)
 }
 
-console.log(notes.join('\n'))
-if (failures.length) {
-  console.error(`\n${failures.length} live check(s) failed:\n${failures.join('\n')}`)
-  process.exit(1)
-}
-console.log(`\nAll ${notes.length} live checks passed.`)
-
 // 9) Global stats need Upstash. Without UPSTASH_REDIS_REST_URL / _TOKEN the API silently
 //    falls back to a per-lambda buffer that empties on every cold start and is not shared
 //    between the function that writes results and the one that reads them - so every day
@@ -118,3 +111,10 @@ check(
   `global stats are backed by Redis (reported: ${storage ?? 'unparseable'})` +
     (storage === 'memory' ? ' - set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel' : ''),
 )
+
+console.log(notes.join('\n'))
+if (failures.length) {
+  console.error(`\n${failures.length} live check(s) failed:\n${failures.join('\n')}`)
+  process.exit(1)
+}
+console.log(`\nAll ${notes.length} live checks passed.`)
