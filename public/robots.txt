@@ -1,4 +1,4 @@
-# World of Maps — https://worldofthemaps.com
+# World of Maps — https://www.worldofthemaps.com
 # Default: everything crawlable except the API.
 
 User-agent: *
@@ -52,4 +52,4 @@ Allow: /
 User-agent: Amazonbot
 Allow: /
 
-Sitemap: https://worldofthemaps.com/sitemap.xml
+Sitemap: https://www.worldofthemaps.com/sitemap.xml

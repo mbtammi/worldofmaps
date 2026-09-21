@@ -21,7 +21,7 @@ if (!HANDLE || !APP_PASSWORD) {
   process.exit(0)
 }
 
-const SITE = 'https://worldofthemaps.com'
+const SITE = 'https://www.worldofthemaps.com'
 const TEASERS = [
   "Today's World of Maps puzzle: can you guess which global dataset the map represents?",
   'Daily geography brain warm-up — read the map, guess the data.',

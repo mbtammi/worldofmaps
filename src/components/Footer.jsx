@@ -69,7 +69,7 @@ function Footer() {
               aria-label="World of Maps for teachers and classrooms"
             >For Teachers</a>
             <a
-              href="https://worldofthemaps.com/landing"
+              href="https://www.worldofthemaps.com/landing"
               className="footer-link"
               aria-label="Geography game home page"
             >Home</a>

@@ -6,6 +6,7 @@ import { ROUTE_META } from '../seo/routeMeta'
 import { getTodaysYearChallenge, scoreYearGuess } from '../data/yearChallenge'
 import { initializeTheme } from '../data/themeManager'
 import { haptic } from '../data/haptics'
+import { trackEvent } from '../data/events'
 import './YearGame.css'
 
 const STORAGE_KEY = (day) => `worldofthemaps_year_progress_${day}`
@@ -48,6 +49,7 @@ export default function YearGame() {
         const ch = await getTodaysYearChallenge()
         if (cancelled) return
         setChallenge(ch)
+        trackEvent('year_start', ch.dayIndex, { once: true })
         // Restore previously-submitted guess for today, if any
         try {
           const raw = localStorage.getItem(STORAGE_KEY(ch.dayIndex))
@@ -91,6 +93,7 @@ export default function YearGame() {
     if (submitted || !challenge || guess == null) return
     setSubmitted(true)
     haptic(Math.abs(guess - challenge.year) <= 1 ? 'win' : 'wrong')
+    trackEvent('year_submit', challenge.dayIndex)
     try {
       localStorage.setItem(STORAGE_KEY(challenge.dayIndex), JSON.stringify({ guess, submitted: true }))
     } catch { /* ignore */ }

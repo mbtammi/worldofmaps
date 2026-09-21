@@ -30,7 +30,7 @@ export default function ShareSheet({ result, open, onClose }) {
 
   const text = generateShareText(result)
   const encodedText = encodeURIComponent(text)
-  const pageUrl = 'https://worldofthemaps.com' // canonical base
+  const pageUrl = 'https://www.worldofthemaps.com' // canonical base
   const encodedPage = encodeURIComponent(pageUrl)
 
   const shareTargets = [

@@ -13,6 +13,7 @@ import FeatureRequestsModal from './FeatureRequestsModal'
 import { hasNewFeaturesRemote } from '../data/featureRequestsRemote'
 import Icon from './Icon'
 import { haptic } from '../data/haptics'
+import { trackEvent, trackAbandonOnExit } from '../data/events'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
 import './DailyGame.css'
@@ -49,6 +50,8 @@ function DailyGame() {
   })()
   const inviterHard = searchParams.get('mode') === 'hard'
   const [gameState, setGameState] = useState(null)
+  const gameStateRef = useRef(null)
+  useEffect(() => { gameStateRef.current = gameState }, [gameState])
   const [showTooltips, setShowTooltips] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showInstructions, setShowInstructions] = useState(true)
@@ -90,6 +93,7 @@ function DailyGame() {
     try { return localStorage.getItem('worldofthemaps_hard_mode') === '1' } catch { return false }
   })
   const toggleHardMode = () => {
+    trackEvent(hardMode ? 'hard_mode_off' : 'hard_mode_on', gameState?.dataset?.challengeInfo?.dayIndex)
     try { localStorage.setItem('worldofthemaps_hard_mode', hardMode ? '0' : '1') } catch (_) {}
     window.location.reload()
   }
@@ -178,6 +182,17 @@ function DailyGame() {
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [gameState?.isComplete])
+
+  // Report games left in progress. Paired with game_start and the completion count from
+  // submitResult, this gives the whole funnel: loaded -> started -> finished.
+  useEffect(() => {
+    const dayIndex = gameState?.dataset?.challengeInfo?.dayIndex
+    if (isPastDay || dayIndex == null) return
+    return trackAbandonOnExit(
+      dayIndex,
+      () => gameStateRef.current && !gameStateRef.current.isComplete && gameStateRef.current.guesses.length > 0,
+    )
+  }, [gameState?.dataset?.challengeInfo?.dayIndex, isPastDay])
 
   // Remove handle pulse after a few seconds
   useEffect(()=>{
@@ -281,7 +296,8 @@ function DailyGame() {
         
         // Stats & global averages now lazy-loaded after first paint (see effect below)
         
-        console.log('DailyGame: Game initialized successfully')
+        if (!isPastDay) trackEvent('game_start', dataset.challengeInfo?.dayIndex, { once: true })
+        else trackEvent('archive_play', dataset.challengeInfo?.dayIndex, { once: true })
       } catch (error) {
         console.error('DailyGame: Failed to initialize game:', error)
         setLoadError(error.message || 'Failed to load today\'s challenge. Please try again.')
@@ -478,6 +494,7 @@ function DailyGame() {
       dayDate: isPastDay ? pastDate : null,
       mode: hardMode ? 'hard' : 'normal',
     }
+    trackEvent('share_click', gameState.dataset.challengeInfo?.dayIndex)
     setShareStatus('preparing')
     // Create 9:16 story image (no title reveal)
     // Capture globe via stable id (#world-globe-canvas)
@@ -541,6 +558,7 @@ function DailyGame() {
     const params = new URLSearchParams()
     if (gameState.isWon) params.set('score', String(gameState.guesses.length))
     if (hardMode) params.set('mode', 'hard')
+    trackEvent('challenge_click', gameState.dataset.challengeInfo?.dayIndex)
     const qs = params.toString()
     const url = `${SITE_URL}/challenge/${todayDate}${qs ? '?' + qs : ''}`
     const ratingSize = guessBudgetFor(hardMode ? 4 : 10)

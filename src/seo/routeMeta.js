@@ -3,7 +3,7 @@
 // scripts/prerender.mjs (build-time, injects crawler-visible <head> tags into static HTML).
 // Plain JS (no JSX) so the Node prerender script can import it directly.
 
-export const SITE_URL = 'https://worldofthemaps.com'
+export const SITE_URL = 'https://www.worldofthemaps.com'
 export const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`
 
 export const ROUTE_META = {

@@ -36,6 +36,20 @@ export default async function handler(req, res) {
       const baseKey = `daily:${dayIndex}:stats`
       const raw = await redis.hgetall(baseKey)
       const data = parseRedisArray(raw)
+      // Funnel counters written by api/event.js. Kept in a separate hash so the game's own
+      // stats payload stays unchanged for older clients.
+      const events = parseRedisArray(await redis.hgetall(`daily:${dayIndex}:events`))
+      const num = (v) => parseInt(v || '0', 10)
+      const funnel = {
+        starts: num(events.game_start),
+        abandons: num(events.game_abandon),
+        shares: num(events.share_click),
+        challenges: num(events.challenge_click),
+        hardModeOn: num(events.hard_mode_on),
+        archivePlays: num(events.archive_play),
+        yearStarts: num(events.year_start),
+        yearSubmits: num(events.year_submit),
+      }
       if (!Object.keys(data).length) return res.status(200).json({ dayIndex, plays: 0, wins: 0, histogram: {}, avgGuesses: null })
       const plays = parseInt(data.plays || '0')
       const wins = parseInt(data.wins || '0')
@@ -77,7 +91,10 @@ export default async function handler(req, res) {
         medianGuesses: median,
         histogram,
         avgDurationMs: (plays && durationTotal) ? Math.round(durationTotal / plays) : null,
-        updatedAt: data.updatedAt ? parseInt(data.updatedAt) : null
+        updatedAt: data.updatedAt ? parseInt(data.updatedAt) : null,
+        funnel,
+        // starts -> plays is the completion rate; the gap is who gave up on the puzzle.
+        completionRate: funnel.starts ? +((plays / funnel.starts) * 100).toFixed(1) : null
       })
     }
 
