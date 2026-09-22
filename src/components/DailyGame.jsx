@@ -236,7 +236,16 @@ function DailyGame() {
   useEffect(() => {
     const initializeGame = async () => {
       try {
+        // Reset per-puzzle state, or a navigation between two date-pinned routes would
+        // show the previous puzzle's board while the new one loads.
         setLoading(true)
+        setGameState(null)
+        setProgressLoaded(false)
+        setLoadError(null)
+        setExtremesLine(null)
+        setExtremesIso(null)
+        setResumedComplete(false)
+        setAlreadyPlayedModal(false)
         
         // Set timeout to show slow loading warning after 15 seconds
         const slowLoadTimer = setTimeout(() => {
@@ -329,7 +338,7 @@ function DailyGame() {
     }
     
     initializeGame()
-  }, [])
+  }, [pastDate, isPastDay, hardMode])
 
   // Lightweight, low-contrast keyword support block for crawlers (kept out of main visual flow)
   const KeywordSupport = () => (

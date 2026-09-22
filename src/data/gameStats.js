@@ -86,7 +86,11 @@ export const updateStatsAfterGame = (gameResult, { isDaily = true } = {}) => {
       // Streak continuity: only extend the streak if the previous play was today or yesterday.
       // Skipping one or more days resets the streak to 1 (today restarts it from scratch).
       const prev = stats.lastPlayedDate
-      if (prev === today || prev === yesterday || prev == null) {
+      if (prev === today) {
+        // Already counted today. A second win on the same date must not extend the streak —
+        // the hard-mode toggle reloads into its own progress namespace, so the day's puzzle
+        // can be replayed with the answer known.
+      } else if (prev === yesterday || prev == null) {
         stats.winStreak += 1
       } else {
         stats.winStreak = 1
@@ -95,7 +99,7 @@ export const updateStatsAfterGame = (gameResult, { isDaily = true } = {}) => {
       if (guessCount === 1) stats.firstTryWins += 1
 
       // Track wins by guess count
-      const guessKey = guessCount > 6 ? '6+' : guessCount.toString()
+      const guessKey = guessCount >= 6 ? '6+' : guessCount.toString()
       stats.gamesWonByGuesses[guessKey] += 1
     } else {
       // Any daily loss resets the streak
@@ -135,7 +139,7 @@ export const updateStatsAfterGame = (gameResult, { isDaily = true } = {}) => {
   }
   if (isWon) {
     datasetStat.won += 1
-    const gKey = guessCount > 6 ? '6+' : guessCount.toString()
+    const gKey = guessCount >= 6 ? '6+' : guessCount.toString()
     datasetStat.guessHistogram[gKey] += 1
     if (guessCount === 1) datasetStat.firstTryWins += 1
   }
@@ -169,7 +173,7 @@ export const updateStatsAfterGame = (gameResult, { isDaily = true } = {}) => {
     }
     if (isWon) {
       dsIdStat.won += 1
-      const gKey = guessCount > 6 ? '6+' : guessCount.toString()
+      const gKey = guessCount >= 6 ? '6+' : guessCount.toString()
       dsIdStat.guessHistogram[gKey] += 1
       if (guessCount === 1) dsIdStat.firstTryWins += 1
     }

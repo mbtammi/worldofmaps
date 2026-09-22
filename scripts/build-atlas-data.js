@@ -95,7 +95,7 @@ async function fetchWorldBank(indicator) {
       })
     }
   }
-  return [...byCountry.values()].filter((d) => d.name && !Number.isNaN(d.value) && d.value !== 0)
+  return [...byCountry.values()].filter((d) => d.name && !Number.isNaN(d.value))
 }
 
 let _restBase = null

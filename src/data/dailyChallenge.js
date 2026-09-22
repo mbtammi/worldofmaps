@@ -197,10 +197,12 @@ function getDatasetForDay(dayIndex) {
     if (pattern.length !== totalPool || new Set(pattern.map(p=>p.id)).size !== totalPool) {
       warnLog('Weighted permutation degeneracy detected; reverting to simple unified shuffle.')
       const unified = seededShuffle(suitableDatasets, seedBase + '_fallback')
-      const positionInCycleFallback = idx % totalPool
+      const positionInCycleFallback = ((idx % totalPool) + totalPool) % totalPool
       return unified[positionInCycleFallback].id
     }
-    const positionInCycle = idx % totalPool
+    // JS % keeps the sign of the dividend, so a negative idx indexes off the front of the
+    // array and yields undefined. Reachable every time a cycle wraps (idx - 1 === -1).
+    const positionInCycle = ((idx % totalPool) + totalPool) % totalPool
     const chosen = pattern[positionInCycle]
     devLog(`(WeightedUnique) Day ${idx}: cycle ${cycleNumber}, pos ${positionInCycle}/${totalPool}, featuredPlaced=${fPlaced}, exploratoryPlaced=${ePlaced}, dataset=${chosen.id}`)
     return chosen.id
@@ -208,7 +210,7 @@ function getDatasetForDay(dayIndex) {
 
   // Prevent same dataset two days in a row
   const todayId = _getDatasetForDayIndex(dayIndex)
-  const yesterdayId = _getDatasetForDayIndex(dayIndex - 1)
+  const yesterdayId = _getDatasetForDayIndex(dayIndex === 0 ? CHALLENGE_CONFIG.CYCLE_LENGTH_DAYS - 1 : dayIndex - 1)
   if (todayId === yesterdayId && suitableDatasets.length > 1) {
     // Find the next dataset in the pattern that is not yesterday's
     for (let offset = 1; offset < suitableDatasets.length; offset++) {
@@ -392,7 +394,10 @@ export function getDatasetIdForDate(dateString) {
 // daysAgo=0 returns today's UTC date; positive integers return past dates. Used by the archive page
 // and the prerender script to enumerate past-day URLs.
 export function getDateStringForDaysAgo(daysAgo) {
-  const ms = Date.now() - daysAgo * 24 * 60 * 60 * 1000
+  const ms =
+    Date.now() -
+    CHALLENGE_CONFIG.RESET_HOUR_UTC * 60 * 60 * 1000 -
+    daysAgo * 24 * 60 * 60 * 1000
   const d = new Date(ms)
   const y = d.getUTCFullYear()
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')

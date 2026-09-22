@@ -148,7 +148,7 @@ export async function fetchWorldBankData(indicator, year = 'latest') {
           })
         }
       }
-      const processed = [...byCountry.values()].filter(d => d.name && !isNaN(d.value) && d.value !== 0)
+      const processed = [...byCountry.values()].filter(d => d.name && !isNaN(d.value))
       
       const augmented = await ensureRequiredCountriesWorldBank(indicator, targetYear, processed)
       setCachedData(cacheKey, augmented)
@@ -550,7 +550,10 @@ export function generateDatasetMetadata(datasetId, data, source, dayIndex = null
 // Main function to fetch any dataset
 export async function fetchDataset(datasetId, dayIndex = null) {
   // First check if we have a cached version of this complete dataset
-  const cacheKey = `dataset_${datasetId}`
+  // The cached object holds the day-seeded distractor set, so the key has to name the day.
+  // Without it a Free Play visit (no dayIndex, Math.random distractors) would be served
+  // back on a later daily for the same dataset, desyncing that player's options.
+  const cacheKey = `dataset_${datasetId}_${dayIndex ?? 'free'}`
   const cached = getCachedData(cacheKey)
   if (cached) {
     devLog(`✅ Using cached dataset: ${datasetId}`)
