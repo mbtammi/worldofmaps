@@ -76,6 +76,9 @@ function DailyGame() {
   const autoScrollRef = useRef({ active: false, userInteracted: false })
   const [shareSheetOpen, setShareSheetOpen] = useState(false)
   const [extremesLine, setExtremesLine] = useState(null)
+  // iso_a3 of the highest and lowest country, handed to the globe so the reveal shows on
+  // the map instead of only in a line of text.
+  const [extremesIso, setExtremesIso] = useState(null)
   // Hints removed
   const [showWinToast, setShowWinToast] = useState(false)
   const [featureModalOpen, setFeatureModalOpen] = useState(false)
@@ -193,6 +196,22 @@ function DailyGame() {
       () => gameStateRef.current && !gameStateRef.current.isComplete && gameStateRef.current.guesses.length > 0,
     )
   }, [gameState?.dataset?.challengeInfo?.dayIndex, isPastDay])
+
+  // Extremes reveal. Driven by isComplete rather than the guess handler so it also appears
+  // when a finished game is restored from localStorage on a reload.
+  useEffect(() => {
+    if (!gameState?.isComplete) return
+    const rows = (gameState.dataset?.data || []).filter(d => typeof d.value === 'number')
+    if (rows.length < 2) return
+    let min = rows[0]
+    let max = rows[0]
+    for (const d of rows) {
+      if (d.value < min.value) min = d
+      if (d.value > max.value) max = d
+    }
+    setExtremesLine(`${max.name} highest, ${min.name} lowest`)
+    if (max.iso_a3 && min.iso_a3) setExtremesIso({ maxIso: max.iso_a3, minIso: min.iso_a3 })
+  }, [gameState?.isComplete, gameState?.dataset])
 
   // Remove handle pulse after a few seconds
   useEffect(()=>{
@@ -430,15 +449,6 @@ function DailyGame() {
             }, 1600)
           }
         }
-        // Compute a single-line extremes summary
-        try {
-          const arr = (newGameState.dataset.data || []).filter(d => typeof d.value === 'number')
-          if (arr.length > 1) {
-            let min = arr[0], max = arr[0]
-            for (const d of arr) { if (d.value < min.value) min = d; if (d.value > max.value) max = d }
-            if (min && max) setExtremesLine(`${max.name} highest, ${min.name} lowest`)
-          }
-        } catch(_){}
         if (newGameState.isWon) {
           haptic('win')
           setShowWinToast(true)
@@ -799,7 +809,7 @@ function DailyGame() {
         </div>
       )}
       {/* Fullscreen Globe Background */}
-      <GlobeView dataset={gameState.dataset} showTooltips={showTooltips} />
+      <GlobeView dataset={gameState.dataset} showTooltips={showTooltips} highlight={extremesIso} />
       
       {/* Top Left - Game Title */}
       <div className="top-left-title">
@@ -1072,14 +1082,14 @@ function DailyGame() {
                 <h2><Icon name="check" /> Correct!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p className="fun-fact">{gameState.dataset.funFact}</p>
-                {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
+                {extremesLine && <p className="extremes-line">{extremesLine}</p>}
               </div>
             ) : (
               <div className="lose-message">
                 <h2><Icon name="close" /> Game Over!</h2>
                 <p>The answer was: <strong>{gameState.dataset.title}</strong></p>
                 <p>{gameState.dataset.description}</p>
-                {extremesLine && <p style={{fontSize:'0.7em',opacity:0.75,marginTop:6}}>{extremesLine}</p>}
+                {extremesLine && <p className="extremes-line">{extremesLine}</p>}
               </div>
             )}
             <div className="next-puzzle">

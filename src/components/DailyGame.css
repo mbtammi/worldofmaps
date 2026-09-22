@@ -821,3 +821,11 @@
   opacity: 0.5;
   text-align: center;
 }
+
+/* Extremes summary, colour-matched to the two countries lifted on the globe: warm for the
+   highest, cool for the lowest, so the text and the map read as one reveal. */
+.extremes-line {
+  font-size: 0.7em;
+  opacity: 0.8;
+  margin-top: 6px;
+}

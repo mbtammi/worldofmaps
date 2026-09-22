@@ -3,7 +3,9 @@ import Globe from 'react-globe.gl'
 import { feature } from 'topojson-client'
 import './GlobeView.css'
 
-function GlobeView({ dataset, showTooltips = false }) {
+// `highlight` is a pair of iso_a3 codes ({ maxIso, minIso }) emphasised once a round ends,
+// so the reveal lands on the map rather than only in a line of text below it.
+function GlobeView({ dataset, showTooltips = false, highlight = null }) {
   const globeEl = useRef()
   const [globeSize, setGlobeSize] = useState({ width: 800, height: 600 })
   const [countries, setCountries] = useState([])
@@ -157,7 +159,8 @@ function GlobeView({ dataset, showTooltips = false }) {
             value: value,
             color: color,
             countryCode: iso2 || iso3,
-            countryName: countryName
+            countryName: countryName,
+            iso3,
           }
         })
         
@@ -174,6 +177,48 @@ function GlobeView({ dataset, showTooltips = false }) {
         setIsLoading(false)
       })
   }, [dataMap, getColor, themeUpdateTrigger])
+
+  // Rough centroid of a country's largest ring — enough to aim the camera, and avoids
+  // pulling in d3-geo for one calculation.
+  const centroidOf = (feature) => {
+    const geom = feature?.geometry
+    if (!geom) return null
+    const rings = geom.type === 'Polygon' ? [geom.coordinates[0]] : (geom.coordinates || []).map(p => p[0])
+    let best = null
+    for (const ring of rings) {
+      if (Array.isArray(ring) && (!best || ring.length > best.length)) best = ring
+    }
+    if (!best?.length) return null
+    let lng = 0
+    let lat = 0
+    for (const [x, y] of best) { lng += x; lat += y }
+    return { lat: lat / best.length, lng: lng / best.length }
+  }
+
+  // Fly to the highest-value country when a round ends. A reveal the player cannot see is
+  // not a reveal; the globe is usually showing the wrong hemisphere when the game finishes.
+  useEffect(() => {
+    if (!highlight?.maxIso || !countries.length || !globeEl.current) return
+    const target = countries.find(c => c.iso3 === highlight.maxIso)
+    const at = centroidOf(target)
+    if (!at) return
+    try {
+      globeEl.current.controls().autoRotate = false
+      globeEl.current.pointOfView({ lat: at.lat, lng: at.lng, altitude: 2.4 }, 1600)
+      // Resume the idle spin once the camera has settled, so the globe doesn't freeze.
+      const t = setTimeout(() => {
+        try { globeEl.current.controls().autoRotate = true } catch { /* unmounted */ }
+      }, 4200)
+      return () => clearTimeout(t)
+    } catch { /* camera control is cosmetic */ }
+  }, [highlight, countries])
+
+  // globe.gl only re-evaluates the polygon accessors when the data array identity changes,
+  // so a new highlight needs a new array.
+  const highlightedCountries = useMemo(
+    () => (highlight ? countries.map(c => ({ ...c })) : countries),
+    [countries, highlight],
+  )
 
   // Handle window resize for responsive globe
   useEffect(() => {
@@ -253,11 +298,16 @@ function GlobeView({ dataset, showTooltips = false }) {
         globeImageUrl={globeImageUrl}
         
         // Use polygons instead of choropleth
-        polygonsData={countries}
+        polygonsData={highlightedCountries}
         polygonGeoJsonGeometry={d => d.geometry} // Extract just the geometry from the feature
         polygonCapColor={d => d.color}
         polygonSideColor={d => d.color}
-        polygonStrokeColor={() => 'rgba(255,255,255,0.15)'}
+        polygonStrokeColor={d => {
+          if (!highlight) return 'rgba(255,255,255,0.15)'
+          if (d.iso3 && d.iso3 === highlight.maxIso) return 'rgba(255, 245, 200, 0.95)'
+          if (d.iso3 && d.iso3 === highlight.minIso) return 'rgba(160, 225, 255, 0.95)'
+          return 'rgba(255,255,255,0.10)'
+        }}
         // capCurvatureResolution is in angular DEGREES, so a bigger number is a coarser cap.
         // At the old 5° a large country's cap was tessellated crudely enough to sag below its
         // own outline; 1° costs a few thousand triangles and follows the sphere properly.
@@ -265,7 +315,14 @@ function GlobeView({ dataset, showTooltips = false }) {
         // Note: `preserveDrawingBuffer` (needed for share-image capture) lets a screenshot read
         // the frame mid-draw, so screen captures of this globe show hatching that isn't on
         // screen. Judge rendering changes here in a live browser, not from a screenshot.
-        polygonAltitude={0.005}
+        polygonAltitude={d => {
+          // Lift the two extremes clear of the surface so they read at a glance. The base
+          // stays at the flat 0.005 the rest of the map uses.
+          if (highlight && d.iso3 && (d.iso3 === highlight.maxIso || d.iso3 === highlight.minIso)) {
+            return 0.06
+          }
+          return 0.005
+        }}
         polygonCapCurvatureResolution={1}
         polygonLabel={showTooltips ? (d => {
           const name = d.countryName || d.properties?.NAME || 'Unknown'

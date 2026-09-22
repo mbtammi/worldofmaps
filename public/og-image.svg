@@ -46,13 +46,16 @@
     </g>
   </g>
 
-  <!-- Text -->
-  <g transform="translate(660 0)">
-    <text x="0" y="240" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="700" fill="#ffffff">World of Maps</text>
-    <text x="0" y="312" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="36" font-weight="600" fill="#bfe6ff">Daily Geography &amp; Data</text>
-    <text x="0" y="360" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="36" font-weight="600" fill="#bfe6ff">Guessing Game</text>
-    <text x="0" y="430" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" fill="#ffffff" opacity="0.85">Guess the dataset behind the map &#8212; on a 3D globe.</text>
-    <rect x="0" y="468" width="300" height="58" rx="29" fill="#ffca1a"/>
-    <text x="150" y="506" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#0b2545">worldofthemaps.com</text>
+  <!-- Text. Sizes and the 620 origin are chosen so the longest line clears the 1200px
+       canvas: at 78px the title used to render past the right edge and lose its last
+       letters. scripts/build-og-image.mjs asserts nothing overflows. -->
+  <g transform="translate(620 0)">
+    <text x="0" y="232" font-family="Georgia, 'Times New Roman', serif" font-size="62" font-weight="700" fill="#ffffff">World of Maps</text>
+    <text x="0" y="296" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="31" font-weight="600" fill="#bfe6ff">Daily Geography &amp; Data</text>
+    <text x="0" y="338" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="31" font-weight="600" fill="#bfe6ff">Guessing Game</text>
+    <text x="0" y="400" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="23" fill="#ffffff" opacity="0.85">Guess the dataset behind the map,</text>
+    <text x="0" y="430" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="23" fill="#ffffff" opacity="0.85">on an interactive 3D globe.</text>
+    <rect x="0" y="468" width="290" height="56" rx="28" fill="#ffca1a"/>
+    <text x="145" y="505" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#0b2545">worldofthemaps.com</text>
   </g>
 </svg>
