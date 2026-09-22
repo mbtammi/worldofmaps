@@ -329,10 +329,12 @@
 .guesses-summary {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--glassBorder);
   text-align: center;
   font-size: 0.85em;
-  color: rgba(255, 255, 255, 0.7);
+  /* Was a hardcoded rgba(255,255,255,0.7), which is invisible on the light theme's pale
+     panel — and this is the one number telling the player how close they are to losing. */
+  color: var(--textSecondary);
 }
 
 /* Loading state */
@@ -410,8 +412,8 @@
     margin-top: -35vh;
     font-size: 1em;
     padding: 10px 20px;
-    left: 30%;
-    width: 40%;
+    left: 50%; /* the base rule translates by -50%, so this is what centres it */
+    width: 70%;
     border: 0;
   }
   
@@ -464,8 +466,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 20px;
-    margin: 0 auto 8px auto;
+    /* Matches the 42px strip left visible when collapsed. At 20px the lower half of the
+       bar the user can see was not a tap target, so tapping it appeared to do nothing. */
+    height: 42px;
+    margin: 0 auto 4px auto;
     padding: 0;
     background: transparent;
     backdrop-filter: none;
@@ -531,8 +535,11 @@
     font-size: 0.75em;
     padding: 8px 10px;
     min-width: 100px;
-    /* Calculate height to match stacked controls */
-    height: calc(40px * 3 + 6px * 2); /* 3 buttons + 2 gaps */
+    /* Was a fixed calc() sized for 3 buttons and a 6px gap; there are 4 buttons at an 8px
+       gap, and the panel's own contents are roughly twice the height it allowed, with no
+       overflow set — so it clipped on every phone. Let it size to content instead. */
+    max-height: 40vh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -745,8 +752,11 @@
 }
 
 .guesses-critical {
-  color: #ff8a95;
-  font-weight: 600;
+  /* Hardcoded pink measured ~2:1 on the light theme. Pair a themed colour with weight and
+     size so the warning does not rely on hue alone. */
+  color: var(--dangerText, #c02a3a);
+  font-weight: 700;
+  font-size: 1.05em;
 }
 
 /* Countdown to the next daily reset, in place of the old reload button. */
@@ -828,4 +838,24 @@
   font-size: 0.7em;
   opacity: 0.8;
   margin-top: 6px;
+}
+
+/* Announced to assistive tech, never shown. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Used pips differ by width and opacity as well as hue — a red/grey pair alone is the
+   textbook deuteranopia failure. */
+.guess-pip-used {
+  opacity: 1;
+  transform: scaleY(1.6);
 }

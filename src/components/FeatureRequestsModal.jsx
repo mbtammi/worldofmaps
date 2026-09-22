@@ -1,3 +1,4 @@
+import { useModalA11y } from '../data/useModalA11y'
 import Icon from './Icon'
 import { useEffect, useState } from 'react'
 import './FeatureRequestsModal.css'
@@ -10,6 +11,7 @@ import {
 } from '../data/featureRequestsRemote'
 
 export default function FeatureRequestsModal({ open, onClose }) {
+  const dialogRef = useModalA11y(open, onClose)
   const [features, setFeatures] = useState([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -139,7 +141,7 @@ export default function FeatureRequestsModal({ open, onClose }) {
   if (!open) return null
 
   return (
-    <div className="fr-overlay" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
+    <div ref={dialogRef} className="fr-overlay" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
       <div className="fr-container">
         <div className="fr-header">
           <h2 id="fr-modal-title">Feature Requests & Roadmap</h2>

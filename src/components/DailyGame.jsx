@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useParams, useLocation, useSearchParams, Link } from 'react-router-dom'
 import { SITE_URL } from '../seo/routeMeta'
 import GlobeView from './GlobeView'
@@ -13,6 +13,7 @@ import FeatureRequestsModal from './FeatureRequestsModal'
 import { hasNewFeaturesRemote } from '../data/featureRequestsRemote'
 import Icon from './Icon'
 import { haptic } from '../data/haptics'
+import { useModalA11y } from '../data/useModalA11y'
 import { trackEvent, trackAbandonOnExit } from '../data/events'
 import SEO from './SEO'
 import { ROUTE_META } from '../seo/routeMeta'
@@ -90,6 +91,8 @@ function DailyGame() {
   const [currentStreak, setCurrentStreak] = useState(0)
   const [yesterdayInfo, setYesterdayInfo] = useState(null)
   const [resetCountdown, setResetCountdown] = useState('')
+  const closeAlreadyPlayed = useCallback(() => setAlreadyPlayedModal(false), [])
+  const alreadyPlayedRef = useModalA11y(alreadyPlayedModal, closeAlreadyPlayed)
   // Hard mode (lazy init from localStorage so it's available on first render).
   // Toggling reloads the page so the new option count takes effect cleanly.
   const [hardMode] = useState(() => {
@@ -761,6 +764,8 @@ function DailyGame() {
     <>
     <SEO {...ROUTE_META['/']} />
     <div className="daily-game">
+      <HiddenHeading />
+      <KeywordSupport />
       {/* Minimal mobile toast for win */}
       {showWinToast && (
         <div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',padding:'8px 16px',borderRadius:24,fontSize:'0.85em',zIndex:160,display:'flex',alignItems:'center',gap:8}}>
@@ -798,8 +803,14 @@ function DailyGame() {
       )}
       {alreadyPlayedModal && (
         <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,background:'rgba(0,0,0,0.6)'}}>
-          <div style={{background:'var(--glassBackground)',backdropFilter:'blur(12px)',border:'1px solid var(--glassBorder)',padding:'30px 35px',borderRadius:16,maxWidth:320,textAlign:'center'}}>
-            <h2 style={{margin:'0 0 10px',fontSize:'1.3em'}}>{gameState.isWon ? 'You WON!' : 'Better luck tomorrow'}</h2>
+          <div
+            ref={alreadyPlayedRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="already-played-title"
+            style={{background:'var(--glassBackground)',backdropFilter:'blur(12px)',border:'1px solid var(--glassBorder)',padding:'30px 35px',borderRadius:16,maxWidth:320,textAlign:'center'}}
+          >
+            <h2 id="already-played-title" style={{margin:'0 0 10px',fontSize:'1.3em'}}>{gameState.isWon ? 'You WON!' : 'Better luck tomorrow'}</h2>
             <p style={{fontSize:'0.9em',lineHeight:1.4,margin:'0 0 18px'}}>You already finished today’s map. Come back tomorrow or play other maps.</p>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <button className="play-again-btn" onClick={() => { window.location.href='/play' }}>Play More Maps</button>
@@ -883,10 +894,10 @@ function DailyGame() {
       
       {/* Top Right - Controls */}
       <div className="top-right-controls">
-        <button className="control-btn" style={{fontSize: '1.2em', padding: '0'}} onClick={() => window.location.href = '/landing'}>
+        <button className="control-btn" aria-label="Home" title="Home" style={{fontSize: '1.2em', padding: '0'}} onClick={() => window.location.href = '/landing'}>
           <Icon name="home" />
         </button>
-        <button className="control-btn" onClick={handleThemeSwitch}>
+        <button className="control-btn" aria-label="Switch colour theme" title="Switch colour theme" onClick={handleThemeSwitch}>
           <Icon name={getAllThemes().find(t => t.id === currentTheme)?.icon || 'moon'} />
         </button>
         <button
@@ -898,7 +909,14 @@ function DailyGame() {
           <Icon name="chart" />
         </button>
         <div className="menu-container">
-          <button className="control-btn" onClick={() => { setShowMenu(!showMenu); }} style={{position:'relative'}}>
+          <button
+            className="control-btn"
+            aria-label="More options"
+            aria-haspopup="menu"
+            aria-expanded={showMenu}
+            onClick={() => { setShowMenu(!showMenu); }}
+            style={{position:'relative'}}
+          >
             ⋯
             {featureHasNew && (
               <span style={{
@@ -949,13 +967,7 @@ function DailyGame() {
         {currentStreak > 0 && (
           <div
             className="stat-item"
-            style={{
-              fontWeight: 700,
-              color: '#ffca1a',
-              cursor: 'pointer',
-            }}
-            onClick={() => setStatsModalOpen(true)}
-            title="View stats"
+            style={{ fontWeight: 700, color: '#ffca1a' }}
           >
             <span><Icon name="flame" /> Streak</span>
             <span>{currentStreak}</span>
@@ -1051,7 +1063,7 @@ function DailyGame() {
                 Select the data this map represents:
               </div>
               {gameState.maxGuesses && (
-                <div className="guess-pips" aria-label={`${guessesLeft} of ${gameState.maxGuesses} guesses left`}>
+                <div className="guess-pips" role="presentation">
                   {Array.from({ length: gameState.maxGuesses }, (_, i) => (
                     <span
                       key={i}
@@ -1061,9 +1073,9 @@ function DailyGame() {
                 </div>
               )}
               <div className="options-grid">
-                {gameState.availableOptions.map((option, index) => (
+                {gameState.availableOptions.map((option) => (
                   <button
-                    key={index}
+                    key={option}
                     className="option-btn"
                     onClick={() => handleOptionSelect(option)}
                     onTouchStart={() => { autoScrollRef.current.userInteracted = true; autoScrollRef.current.active = false; setShowScrollHint(false) }}
@@ -1145,6 +1157,13 @@ function DailyGame() {
         )}
         
         {/* Previous guesses */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {gameState.isComplete
+            ? `${gameState.isWon ? 'Correct' : 'Game over'}. The answer was ${gameState.dataset.title}.`
+            : gameState.guesses.length > 0
+              ? `Not quite. ${guessesLeft} ${guessesLeft === 1 ? 'guess' : 'guesses'} left.`
+              : ''}
+        </div>
         {gameState.guesses.length > 0 && !drawerCollapsed && !gameState.isComplete && gameState.maxGuesses && (
           <div className="guesses-summary">
             <p className={guessesLeft <= 1 ? 'guesses-critical' : undefined}>

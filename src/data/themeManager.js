@@ -33,6 +33,7 @@ export const themeConfigs = {
       textPrimary: 'rgba(255, 255, 255, 0.9)',
       textSecondary: 'rgba(255, 255, 255, 0.7)',
       textMuted: 'rgba(255, 255, 255, 0.5)',
+      dangerText: '#ff9aa4',
       
       // Interactive elements
       buttonHover: 'rgba(255, 255, 255, 0.2)',
@@ -68,6 +69,7 @@ export const themeConfigs = {
       textPrimary: 'rgba(0, 0, 0, 0.9)',
       textSecondary: 'rgba(0, 0, 0, 0.7)',
       textMuted: 'rgba(0, 0, 0, 0.5)',
+      dangerText: '#b3121f',
       
       // Interactive elements
       buttonHover: 'rgba(0, 0, 0, 0.1)',
@@ -101,6 +103,7 @@ export const themeConfigs = {
       textPrimary: 'rgba(255, 255, 255, 0.95)',
       textSecondary: 'rgba(255, 255, 255, 0.8)',
       textMuted: 'rgba(255, 255, 255, 0.6)',
+      dangerText: '#ff9aa4',
       
       // Interactive elements
       buttonHover: 'rgba(255, 255, 255, 0.3)',

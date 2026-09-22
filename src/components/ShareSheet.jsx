@@ -1,9 +1,11 @@
+import { useModalA11y } from '../data/useModalA11y'
 import Icon from './Icon'
 import { useEffect, useState } from 'react'
 import { generateShareText, createStoryShareImage, copyTextToClipboard, tryWebShare } from '../data/shareUtils'
 
 // Simple share sheet with platform-specific links and system share if available
 export default function ShareSheet({ result, open, onClose }) {
+  const dialogRef = useModalA11y(open, onClose)
   const [imageUrl, setImageUrl] = useState(null)
   const [status, setStatus] = useState(null)
   const [supportsFileShare, setSupportsFileShare] = useState(false)
@@ -85,10 +87,17 @@ export default function ShareSheet({ result, open, onClose }) {
 
   return (
     <div style={styles.overlay} onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose() }}>
-      <div style={styles.sheet} className="share-sheet">
+      <div
+        ref={dialogRef}
+        style={styles.sheet}
+        className="share-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-sheet-title"
+      >
         <div style={styles.header}>
-          <h3 style={{margin:0,fontSize:'1.1em'}}>Share your result</h3>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+          <h3 id="share-sheet-title" style={{margin:0,fontSize:'1.1em'}}>Share your result</h3>
+          <button onClick={onClose} style={styles.closeBtn} aria-label="Close share options">×</button>
         </div>
         {status === 'preparing' && <div style={styles.status}>Preparing image…</div>}
         {imageUrl && (

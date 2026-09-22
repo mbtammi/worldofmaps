@@ -10,6 +10,10 @@
 }
 
 .stats-modal {
+  /* Content runs ~490px; without a cap it overflows a flex-centred overlay in both
+     directions on a short viewport and takes the close button off-screen with it. */
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
   background: var(--glassBackground, rgba(20, 25, 40, 0.92));
   backdrop-filter: blur(12px);

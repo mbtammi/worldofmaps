@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Icon from './Icon'
+import { useModalA11y } from '../data/useModalA11y'
 import { getCalculatedStats } from '../data/gameStats'
 import { getTimeUntilReset } from '../data/dailyChallenge'
 import './StatsModal.css'
@@ -10,6 +11,7 @@ import './StatsModal.css'
 export default function StatsModal({ open, onClose, currentGuessBucket = null, onShare = null }) {
   const [stats, setStats] = useState(null)
   const [countdown, setCountdown] = useState(null)
+  const dialogRef = useModalA11y(open, onClose)
 
   useEffect(() => {
     if (!open) return
@@ -32,6 +34,7 @@ export default function StatsModal({ open, onClose, currentGuessBucket = null, o
   return (
     <div className="stats-modal-overlay" onClick={onClose} role="presentation">
       <div
+        ref={dialogRef}
         className="stats-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"

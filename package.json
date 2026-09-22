@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "npm run check &&  node scripts/build-og-image.mjs && node scripts/build-blog-data.js && vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "build": "npm run check &&  node scripts/build-og-image.mjs && node scripts/build-blog-data.js && vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/check-bundle-split.mjs",
     "build:client": "vite build",
     "og:build": "node scripts/build-og-image.mjs",
     "atlas:data": "node scripts/build-atlas-data.js",
@@ -14,6 +14,7 @@
     "check": "node scripts/check-globe-join.mjs && node scripts/check-article-facts.mjs && node scripts/check-guess-budget.mjs && node scripts/check-reset-clock.mjs && node scripts/check-hooks.mjs && node scripts/check-events.mjs && node scripts/check-year-mode.mjs",
     "globe:check": "node scripts/check-globe-join.mjs",
     "blog:check": "node scripts/check-article-facts.mjs",
+    "bundle:check": "node scripts/check-bundle-split.mjs",
     "check:live": "node scripts/check-live.mjs",
     "year:data": "node scripts/build-year-data.js",
     "blog:listicles": "node scripts/generate-listicles.js",
