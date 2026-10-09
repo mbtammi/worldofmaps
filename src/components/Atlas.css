@@ -26,6 +26,28 @@
   color: #cbd5e0;
 }
 
+/* Key facts: plain sentences an assistant can quote verbatim. Every theme var carries a
+   fallback because applyTheme() sets these on documentElement and only the game routes call
+   it, so on a cold /atlas/:id load they are unset. */
+.atlas .atlas-keyfacts {
+  margin: 1.5rem 0 2rem;
+  padding: 1.15rem 1.35rem;
+  max-width: 70ch;
+  background: var(--glassBackground, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--glassBorder, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+}
+.atlas .atlas-keyfacts p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--textPrimary, #e2e8f0);
+}
+.atlas .atlas-keyfacts p + p {
+  margin-top: 0.6rem;
+  color: var(--textSecondary, #cbd5e0);
+}
+
 /* Stats cards */
 .atlas .atlas-stats {
   display: grid;
