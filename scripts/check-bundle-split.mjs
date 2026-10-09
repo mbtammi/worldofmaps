@@ -45,12 +45,19 @@ for (const page of CONTENT_PAGES) {
   )
 }
 
-// 3) The globe must still reach the game, or the split went too far.
-const gameChunk = readdirSync('dist/assets').find((f) => /^DailyGame-.*\.js$/.test(f))
-assert.ok(gameChunk, 'no DailyGame chunk found')
+// 3) The globe must still reach the game, or the split went too far. Rollup emits more
+//    than one DailyGame-* chunk, and only one of them carries the reference, so this asks
+//    whether ANY lazy game chunk pulls the globe in rather than picking the first match.
+const gameChunks = readdirSync('dist/assets').filter((f) =>
+  /^(DailyGame|FreePlayGame|YearGame)-.*\.js$/.test(f),
+)
+assert.ok(gameChunks.length, 'no game chunks found')
+const pullsGlobe = gameChunks.filter((f) =>
+  readFileSync(`dist/assets/${f}`, 'utf8').includes('globe-vendor'),
+)
 assert.ok(
-  readFileSync(`dist/assets/${gameChunk}`, 'utf8').includes('globe-vendor'),
-  'the game chunk no longer pulls in the globe — the lazy path is broken',
+  pullsGlobe.length,
+  `no game chunk references the globe — the lazy path is broken (checked ${gameChunks.join(', ')})`,
 )
 
 const kb = (f) => (readFileSync(`dist/assets/${f}`).length / 1024).toFixed(0)

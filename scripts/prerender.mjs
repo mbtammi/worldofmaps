@@ -124,11 +124,15 @@ for (const route of PRERENDER_ROUTES) {
 }
 
 // 2) One page per atlas dataset.
+// `_index.json` is a reduced projection (id/title/category/count/year) with no stats, so the
+// full datasets read here are kept for llms.txt in step 6 rather than read from disk twice.
+const atlasDetails = []
 let atlasCount = 0
 for (const entry of atlasIndex) {
   const file = join(atlasDataDir, `${entry.id}.json`)
   if (!existsSync(file)) continue
   const dataset = JSON.parse(readFileSync(file, 'utf-8'))
+  atlasDetails.push(dataset)
   const route = `/atlas/${dataset.id}`
   const meta = {
     path: route,
@@ -199,8 +203,10 @@ const dateForDaysAgo = (daysAgo) => {
 }
 
 let pastCount = 0
+const archiveDates = []
 for (let daysAgo = 1; daysAgo <= PAST_DAYS; daysAgo++) {
   const dateStr = dateForDaysAgo(daysAgo)
+  archiveDates.push(dateStr)
   const route = `/daily/${dateStr}`
   const longDate = formatLongDate(dateStr)
   const meta = {
@@ -245,9 +251,46 @@ console.log(`✓ sitemap.xml (${urls.length} urls)`)
 // "what is this site" and to pick the right page to cite. Generated from the same
 // snapshots as the pages themselves so it can't drift.
 const atlasByCategory = new Map()
-for (const entry of atlasIndex) {
-  if (!atlasByCategory.has(entry.category)) atlasByCategory.set(entry.category, [])
-  atlasByCategory.get(entry.category).push(entry)
+for (const dataset of atlasDetails) {
+  if (!atlasByCategory.has(dataset.category)) atlasByCategory.set(dataset.category, [])
+  atlasByCategory.get(dataset.category).push(dataset)
+}
+
+// Atlas values span ~1e-4 (a country's forest share) to ~1e13 (total GDP), so precision is
+// picked by magnitude. A fixed decimal count would either print a dozen meaningless digits
+// on a GDP figure or round a small-but-nonzero share down to a flat "0".
+function fmtNum(v) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  const abs = Math.abs(v)
+  if (abs === 0) return '0'
+  if (abs >= 1000) return v.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (abs >= 1) return v.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return v.toLocaleString('en-US', { maximumSignificantDigits: 2 })
+}
+
+// 77 of the 88 descriptions are generated from the title and say nothing a reader of the
+// link text doesn't already have. The 11 hand-written ones are kept because they are the
+// only place in the data where a dataset states its unit.
+const atlasBoilerplateDesc = / by country, shown on a world map with full country rankings\.$/
+
+function atlasEntryLine(d) {
+  const s = d.stats ?? {}
+  const max = fmtNum(s.max?.value)
+  const min = fmtNum(s.min?.value)
+  const avg = fmtNum(s.avg)
+  // llms.txt is read by assistants that cite it, so a gap fails the build rather than
+  // shipping a line with a hole in it.
+  const complete =
+    max && min && avg && s.max?.name && s.min?.name && s.count && d.year && d.source
+  if (!complete) {
+    throw new Error(`Atlas dataset ${d.id}: llms.txt needs max/min/avg/count/year/source`)
+  }
+  const desc = atlasBoilerplateDesc.test(d.description) ? '' : `${d.description} `
+  return (
+    `- [${d.title}](${SITE_URL}/atlas/${d.id}): ${desc}` +
+    `Highest ${s.max.name} ${max}, lowest ${s.min.name} ${min}, ` +
+    `average ${avg} across ${s.count} countries. ${d.year}, ${d.source}.`
+  )
 }
 
 const llmsLines = [
@@ -268,26 +311,42 @@ const llmsLines = [
   `- [How to play](${SITE_URL}/how-to-play): rules, scoring, and how to read a choropleth map.`,
   `- [Free play](${SITE_URL}/play): unlimited practice rounds, no daily limit.`,
   `- [Year mode](${SITE_URL}/year-mode): guess the year a dataset snapshot is from.`,
-  `- [Archive](${SITE_URL}/archive): replay the last 30 daily maps.`,
+  `- [Archive](${SITE_URL}/archive): replay the last ${archiveDates.length} daily maps, covering ${archiveDates[archiveDates.length - 1]} to ${archiveDates[0]}. Archive rounds do not affect a daily streak.`,
   '',
   '## Atlas — data pages',
   '',
   `Each atlas page renders one dataset as a world map plus a full country-by-country`,
-  `ranking table, with the source, year and country count stated. ${atlasIndex.length} datasets:`,
+  `ranking table. Every entry below carries that dataset's own figures, so the highest and`,
+  `lowest country, the average and the source can be read here without fetching the page.`,
+  `${atlasDetails.length} datasets.`,
+  '',
+  'How to read the figures:',
+  '',
+  '- Each value is in the unit the original source publishes. That unit is named in the',
+  "  entry only where the dataset itself states it; where no unit appears, the linked page's",
+  '  ranking table is the authority. Do not assume a percentage from a 0-100 range: several',
+  '  of these datasets are scored indices, and one dataset id says "percent" while its',
+  '  values are US dollars.',
+  '- Values are not comparable between datasets, only between countries within one dataset.',
+  "- The stated year is the dataset's latest year with data. Each country's figure is that",
+  "  country's own most recent reported year, which is often earlier, so the stated year is",
+  '  an upper bound and not a uniform vintage.',
+  '- The average is the unweighted mean over the countries listed in that dataset, not a',
+  '  population-weighted world figure.',
+  '- Highest and lowest are over the countries present in that dataset only, and the country',
+  '  count varies by dataset. A country the source omits is absent from the ranking.',
   '',
 ]
 
-for (const [category, entries] of atlasByCategory) {
+for (const [category, datasets] of atlasByCategory) {
   llmsLines.push(`### ${category}`, '')
-  for (const e of entries) {
-    llmsLines.push(`- [${e.title}](${SITE_URL}/atlas/${e.id}): ${e.title} by country, ${e.count} countries, ${e.year}.`)
-  }
+  for (const d of datasets) llmsLines.push(atlasEntryLine(d))
   llmsLines.push('')
 }
 
 llmsLines.push('## Articles', '')
 for (const p of blogIndex.filter((e) => !e.noindex)) {
-  llmsLines.push(`- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`)
+  llmsLines.push(`- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description} Published ${p.date}.`)
 }
 
 llmsLines.push(
@@ -300,6 +359,6 @@ llmsLines.push(
 )
 
 writeFileSync(join(distDir, 'llms.txt'), llmsLines.join('\n'))
-console.log(`✓ llms.txt (${atlasIndex.length} datasets, ${blogIndex.filter((e) => !e.noindex).length} articles)`)
+console.log(`✓ llms.txt (${atlasDetails.length} datasets, ${blogIndex.filter((e) => !e.noindex).length} articles)`)
 
 console.log(`Prerender complete: ${generated.length} routes.`)
