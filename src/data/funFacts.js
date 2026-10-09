@@ -23,7 +23,7 @@ function computeExtremes(data) {
 const FUN_FACT_OVERRIDES = {
   // Core previously added
   'population-density': 'Monaco packs in over 19,000 people per km²—one of the densest places on Earth.',
-  'gdp-per-capita': 'Luxembourg leads global GDP per capita, topping $100k per person.',
+  'gdp-per-capita': 'Monaco tops GDP per capita at over $288,000 per person, more than double fourth-placed Luxembourg.',
   'life-expectancy': 'Japan and Monaco regularly post life expectancies above 84 years.',
   'co2-emissions': 'China and the U.S. together produce roughly 40% of global CO₂ emissions.',
   'internet-users': 'Internet use exceeds 97% of the population in several Nordic countries.',
