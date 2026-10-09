@@ -1,5 +1,57 @@
 [
   {
+    "slug": "child-mortality-since-2000",
+    "title": "Has Child Mortality Actually Fallen? 196 Countries, 2000 to 2024",
+    "description": "Deaths before age five fell from an average of 55 per 1,000 births to 24 across 196 countries. Rwanda cut its rate by 80%. Six countries went the other way.",
+    "date": "2026-10-09",
+    "tags": [
+      "health",
+      "analysis",
+      "change-over-time"
+    ],
+    "readingMinutes": 3,
+    "noindex": false
+  },
+  {
+    "slug": "electricity-access-since-2000",
+    "title": "Afghanistan Went From 4% to 88% Electrified. Two Countries Went Backwards.",
+    "description": "Electricity access rose from 76% to 90% of the world's population since 2000. Of 211 countries, only Libya and Syria ended lower — and both for the same reason.",
+    "date": "2026-10-09",
+    "tags": [
+      "environment",
+      "analysis",
+      "change-over-time"
+    ],
+    "readingMinutes": 2,
+    "noindex": false
+  },
+  {
+    "slug": "life-expectancy-gains-since-2000",
+    "title": "Where Life Expectancy Rose Most Since 2000 (and the Two Places It Fell)",
+    "description": "Malawi gained 21 years of life expectancy in 24 years. Of 217 countries, only two ended lower than they started. What drove the fastest gains on record.",
+    "date": "2026-10-09",
+    "tags": [
+      "health",
+      "analysis",
+      "change-over-time"
+    ],
+    "readingMinutes": 3,
+    "noindex": false
+  },
+  {
+    "slug": "more-phones-than-people",
+    "title": "Why Some Countries Have 500 Mobile Subscriptions per 100 People",
+    "description": "Mobile subscriptions went from 18 to 124 per 100 people since 2000. Fiji reports 574. The number above 100 is not an error, and understanding why tells you what the statistic really counts.",
+    "date": "2026-10-09",
+    "tags": [
+      "technology",
+      "analysis",
+      "change-over-time"
+    ],
+    "readingMinutes": 3,
+    "noindex": false
+  },
+  {
     "slug": "doctors-per-capita-and-infant-mortality",
     "title": "Do More Doctors Mean Fewer Infant Deaths? A 154-Country Check",
     "description": "Physician density and infant mortality correlate at −0.73, one of the strongest links in global health data. The countries that break the pattern show why it isn't the whole story.",

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Agent worktrees are checkouts of this repo, never content.
+.claude/worktrees/
