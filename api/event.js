@@ -11,6 +11,8 @@
 // Event names are allow-listed. The endpoint is public and unauthenticated, so without a
 // fixed list any caller could write arbitrary fields into the hash.
 
+import { resolveRedisEnv } from './_redisEnv.js'
+
 const EVENTS = [
   'game_start', // daily game finished loading and is playable
   'game_abandon', // left with a game in progress (beacon on page hide)
@@ -26,9 +28,9 @@ const EVENTS = [
 let memoryTally = {} // volatile fallback, reset on cold start
 
 async function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
+  const creds = resolveRedisEnv()
+  if (!creds) return null
+  const { url, token } = creds
   return {
     async hincrby(key, field, increment) {
       await fetch(`${url}/hincrby/${key}/${field}/${increment}`, {

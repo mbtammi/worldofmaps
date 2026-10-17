@@ -7,13 +7,15 @@
 // Privacy: no user identifiers stored; purely aggregated counters.
 // NOTE: Keep payload minimal to avoid accidental PII accumulation.
 
+import { resolveRedisEnv } from './_redisEnv.js'
+
 let memoryBuffer = [] // Fallback volatile store (reset on cold start)
 
 // Lazy Redis client creation to avoid bundling if not configured
 async function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
+  const creds = resolveRedisEnv()
+  if (!creds) return null
+  const { url, token } = creds
   return {
     async zadd(key, score, member) {
       await fetch(`${url}/zadd/${key}/${score}/${encodeURIComponent(member)}`, { headers: { Authorization: `Bearer ${token}` } })

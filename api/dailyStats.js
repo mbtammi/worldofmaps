@@ -4,12 +4,14 @@
 // Response fields: plays, wins, firstTry, firstTryRate, avgGuesses, medianGuesses, histogram, avgDurationMs, datasetId, updatedAt.
 // Histogram keys are numeric guess counts (1..n). No user-level data returned.
 
+import { resolveRedisEnv } from './_redisEnv.js'
+
 let memoryBuffer = [] // Should mirror submitResult's fallback; duplication acceptable for simplicity
 
 async function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
+  const creds = resolveRedisEnv()
+  if (!creds) return null
+  const { url, token } = creds
   return {
     async hgetall(key) {
       const r = await fetch(`${url}/hgetall/${key}`, { headers: { Authorization: `Bearer ${token}` } })
