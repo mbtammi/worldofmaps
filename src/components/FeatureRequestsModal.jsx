@@ -1,6 +1,7 @@
 import { useModalA11y } from '../data/useModalA11y'
 import Icon from './Icon'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import './FeatureRequestsModal.css'
 import { 
   listFeaturesRemote, 
@@ -27,6 +28,17 @@ export default function FeatureRequestsModal({ open, onClose }) {
       loadFeatures(0, true) // Reset to first page
       markAllSeenRemote()
     }
+  }, [open])
+
+  // Stop the page behind the overlay from scrolling. Without this, a wheel gesture past the
+  // end of the dialog's own scroll area scrolls the document underneath — very visible now
+  // that the dialog is portalled to <body> and sits over the whole page rather than being
+  // trapped in the footer.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
   }, [open])
 
   async function loadFeatures(page = 0, reset = false) {
@@ -139,14 +151,32 @@ export default function FeatureRequestsModal({ open, onClose }) {
   }
 
   if (!open) return null
+  // The prerender pass (scripts/prerender.mjs) renders with open=false and never gets here,
+  // but createPortal needs a real document, so fail closed rather than throw.
+  if (typeof document === 'undefined') return null
 
-  return (
-    <div ref={dialogRef} className="fr-overlay" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
-      <div className="fr-container">
+  // Portalled to <body> on purpose. This modal is also rendered from inside <footer>, and
+  // .footer carries backdrop-filter: blur(20px) — a backdrop-filter other than `none` makes
+  // an element a containing block for position: fixed descendants. So `inset: 0` on
+  // .fr-overlay resolved against the footer's box instead of the viewport, and the dialog
+  // opened squashed into the footer strip at the very bottom of the page. Centring it in CSS
+  // alone would hold only until the next ancestor grew a filter or a transform; leaving the
+  // tree fixes it for every mount point at once.
+  return createPortal(
+    <div
+      className="fr-overlay"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.() }}
+    >
+      <div ref={dialogRef} className="fr-container" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
         <div className="fr-header">
           <h2 id="fr-modal-title">Feature Requests & Roadmap</h2>
           <button className="fr-close" onClick={onClose} aria-label="Close feature requests"><Icon name="close" /></button>
         </div>
+        {/* Everything below the pinned header scrolls as one region. Giving only .fr-list the
+            scrollbar meant the header, form and note claimed their full height first, so on a
+            short window — or with a phone keyboard up — the list was squeezed to nothing and
+            there was no way to reach the rest. */}
+        <div className="fr-body">
         <form className="fr-form" onSubmit={handleSubmit}>
           <div className="fr-fields">
             <input
@@ -216,8 +246,10 @@ export default function FeatureRequestsModal({ open, onClose }) {
           )}
           Real-time sync with Firebase Firestore. Vote uniqueness tracked per device.
         </div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
